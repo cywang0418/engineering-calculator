@@ -54,10 +54,11 @@ Expected result:
 ```text
 QSPICE exit code: 0
 Found rc_lowpass.qraw
-Found rc_lowpass.log
 ```
 
-If QSPICE opens but reports an error, inspect:
+Some QSPICE versions or settings may not create `rc_lowpass.log` for a successful CLI run. Treat `rc_lowpass.qraw` plus exit code `0` as the pass condition for this first validation.
+
+If QSPICE reports an error and creates a log file, inspect:
 
 ```text
 examples\rc-lowpass\rc_lowpass.log
@@ -79,6 +80,6 @@ Please report:
 ```text
 QSPICE exit code:
 Was rc_lowpass.qraw created? yes/no
-Was rc_lowpass.log created? yes/no
+Was rc_lowpass.log created? yes/no, optional
 Any error text from rc_lowpass.log:
 ```

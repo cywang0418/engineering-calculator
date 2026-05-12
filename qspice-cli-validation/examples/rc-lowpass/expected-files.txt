@@ -1,6 +1,9 @@
-After running QSPICE64.exe with rc_lowpass.cir, this folder should contain:
+After running QSPICE64.exe with rc_lowpass.cir, this folder must contain:
 
 rc_lowpass.qraw
+
+Some QSPICE versions or settings may also create:
+
 rc_lowpass.log
 
 If CSV export is tested with QUX.exe, the selected waveform export should also create a CSV file such as:
