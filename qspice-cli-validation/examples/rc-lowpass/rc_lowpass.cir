@@ -1,0 +1,7 @@
+* QSPICE CLI validation: RC low-pass filter using PWL input
+Vinput in 0 PWL FILE="input.pwl"
+R1 in out 1k
+C1 out 0 1u
+.tran 0 10m 0 10u
+.save V(in) V(out) I(R1)
+.end
