@@ -20,7 +20,7 @@ This validation checks:
 1. A `.cir` netlist can be launched by `QSPICE64.exe`.
 2. A QSPICE-compatible PWL input file can drive a test circuit.
 3. QSPICE produces `.qraw` and `.log` files.
-4. The output waveform can later be exported through QUX or a QSPICE-supported CSV workflow.
+4. The output waveform can be exported through QUX or a QSPICE-supported CSV workflow.
 
 ## Test Circuit
 
@@ -63,6 +63,21 @@ If QSPICE reports an error and creates a log file, inspect:
 ```text
 examples\rc-lowpass\rc_lowpass.log
 ```
+
+## CSV Export Validation
+
+CSV export has been manually validated from the generated `rc_lowpass.qraw`.
+
+Validated exported columns:
+
+```text
+Time
+V(out)
+V(in)
+I(R1)
+```
+
+This confirms the next software step can focus on importing and plotting QSPICE CSV data.
 
 ## Manual Command
 
