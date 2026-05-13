@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QSPICE Engineering Calculator</title>
+  <style>
+    :root {
+      --page: #f4f7fb;
+      --panel: #ffffff;
+      --ink: #182234;
+      --muted: #667085;
+      --line: #d8e0eb;
+      --dark: #172033;
+      --green: #0f766e;
+      --blue: #2563eb;
+      --amber: #b45309;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    header {
+      background: var(--dark);
+      color: #ffffff;
+      padding: 22px 28px;
+    }
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 25px;
+      letter-spacing: 0;
+    }
+    header p {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+      align-items: start;
+    }
+    section, .metric, .step {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    section { margin-bottom: 16px; }
+    h2 {
+      margin: 0;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+    .body { padding: 16px; }
+    .status {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .metric {
+      padding: 12px;
+    }
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .metric strong {
+      display: block;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .step {
+      padding: 12px;
+      min-height: 118px;
+    }
+    .step b {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 13px;
+    }
+    .trace-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .trace {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 12px;
+      background: #fbfcfe;
+    }
+    .trace h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+    .trace dl {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 0;
+      font-size: 13px;
+    }
+    .trace dt { color: var(--muted); }
+    .trace dd {
+      margin: 0;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    code {
+      display: block;
+      white-space: pre-wrap;
+      background: #101827;
+      color: #e5edf7;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    a.button {
+      display: inline-block;
+      background: var(--green);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+    .fileline {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+    @media (max-width: 900px) {
+      .grid, .status, .workflow, .trace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>QSPICE Engineering Calculator</h1>
+    <p>Engineering calculator prototype with QSPICE CLI validation, CSV import, and waveform reporting.</p>
+  </header>
+  <main>
+    <section>
+      <h2>MVP Status</h2>
+      <div class="body status">
+        <div class="metric"><span>QSPICE CLI</span><strong>Validated</strong></div>
+        <div class="metric"><span>CSV Import</span><strong>1001 samples</strong></div>
+        <div class="metric"><span>Traces</span><strong>3</strong></div>
+        <div class="metric"><span>Waveform Report</span><strong>Ready</strong></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Workflow</h2>
+      <div class="body workflow">
+        <div class="step"><b>1. Generate Input</b><p>Create PWL or circuit netlist files for QSPICE simulation.</p></div>
+        <div class="step"><b>2. Run QSPICE CLI</b><p>Execute the Windows runner against the selected `.cir` file.</p></div>
+        <div class="step"><b>3. Export CSV</b><p>Export selected QSPICE traces such as V(out), V(in), and I(R1).</p></div>
+        <div class="step"><b>4. Analyze</b><p>Import CSV, compute engineering stats, and view waveform reports.</p></div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section>
+        <h2>Trace Summary</h2>
+        <div class="body trace-grid">
+          <div class="trace">
+            <h3>V(out)</h3>
+            <dl>
+              <dt>Min</dt><dd>0</dd>
+              <dt>Max</dt><dd>4.9083698</dd>
+              <dt>Avg</dt><dd>1.99470893</dd>
+              <dt>RMS</dt><dd>2.74558123</dd>
+            </dl>
+          </div>
+          <div class="trace">
+            <h3>V(in)</h3>
+            <dl>
+              <dt>Min</dt><dd>0</dd>
+              <dt>Max</dt><dd>5</dd>
+              <dt>Avg</dt><dd>1.998002</dd>
+              <dt>RMS</dt><dd>3.16069771</dd>
+            </dl>
+          </div>
+          <div class="trace">
+            <h3>I(R1)</h3>
+            <dl>
+              <dt>Min</dt><dd>-0.00486196112</dd>
+              <dt>Max</dt><dd>0.00495271066</dd>
+              <dt>Avg</dt><dd>3.29306456e-06</dd>
+              <dt>RMS</dt><dd>0.00155877014</dd>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Run Command</h2>
+        <div class="body">
+          <code>scripts\run-qspice-circuit.bat qspice-cli-validation\examples\rc-lowpass\rc_lowpass.cir</code>
+          <p class="fileline">Circuit: qspice-cli-validation/examples/rc-lowpass/rc_lowpass.cir</p>
+          <p class="fileline">CSV: qspice-cli-validation/examples/rc-lowpass/rc_lowpass.csv</p>
+          <a class="button" href="rc_lowpass_report.html">Open Waveform Report</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
