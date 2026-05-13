@@ -310,7 +310,7 @@ def render_pwg_spec_report() -> str:
                 <tr><td>Waveform</td><td>Sinusoidal</td></tr>
                 <tr><td>Amplitude</td><td>V<sub>p</sub> = 12 V</td></tr>
                 <tr><td>Bias Voltage</td><td>V<sub>bias</sub> = 0 V</td></tr>
-                <tr><td>Frequency</td><td>10 Hz</td></tr>
+                <tr><td>Frequency</td><td>10k Hz</td></tr>
               </tbody>
             </table>
           </div>
@@ -324,7 +324,7 @@ def render_pwg_spec_report() -> str:
         <ul>
           <li>Generate a sinusoidal input voltage source for QSPICE.</li>
           <li>Expose waveform, amplitude, bias voltage, and frequency as editable parameters.</li>
-          <li>Default parameters must match the diagram: <code>Sinusoidal</code>, <code>12 V</code>, <code>0 V</code>, <code>10 Hz</code>.</li>
+          <li>Default parameters must match the diagram: <code>Sinusoidal</code>, <code>12 V</code>, <code>0 V</code>, <code>10k Hz</code>.</li>
           <li>Export the waveform to QSPICE through CLI-compatible files such as PWL or generated netlist input.</li>
         </ul>
       </section>

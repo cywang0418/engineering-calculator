@@ -29,7 +29,7 @@ A same-PC combined layout is also acceptable for early development, as long as t
 | Waveform | Sinusoidal |
 | Amplitude | Vp = 12 V |
 | Bias Voltage | Vbias = 0 V |
-| Frequency | 10 Hz |
+| Frequency | 10k Hz |
 
 ## Display Panel Requirements
 

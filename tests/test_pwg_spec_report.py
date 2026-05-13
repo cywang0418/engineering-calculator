@@ -27,7 +27,7 @@ class PwgSpecReportTest(unittest.TestCase):
         self.assertIn("V<sub>p</sub> = 12 V", html)
         self.assertIn("V<sub>bias</sub> = 0 V", html)
         self.assertIn("Frequency", html)
-        self.assertIn("10 Hz", html)
+        self.assertIn("10k Hz", html)
         self.assertIn("L = 100 uH", html)
         self.assertIn("C<sub>out</sub> = 2.4 uF", html)
         self.assertIn("R<sub>o</sub> = 1.25 Ω", html)
