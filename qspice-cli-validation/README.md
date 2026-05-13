@@ -49,6 +49,12 @@ Run:
 scripts\run-rc-lowpass.bat
 ```
 
+Or run the generic runner:
+
+```bat
+scripts\run-qspice-circuit.bat examples\rc-lowpass\rc_lowpass.cir
+```
+
 Expected result:
 
 ```text
