@@ -35,6 +35,7 @@ class ProjectDashboardTest(unittest.TestCase):
         self.assertIn("PWG Display Panel", html)
         self.assertIn("pwg_display_panel_spec.html", html)
         self.assertIn("examples\\pwg-lcr\\pwg_lcr.cir", html)
+        self.assertIn("pwg_lcr_report.html", html)
 
 
 if __name__ == "__main__":
