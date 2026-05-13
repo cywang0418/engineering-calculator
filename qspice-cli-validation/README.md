@@ -93,6 +93,26 @@ run-pwg-lcr-workflow.bat --run-qspice --qspice-exe "C:\Program Files\QSPICE\QSPI
 
 QSPICE currently creates `.qraw`; CSV export is still the manual handoff step unless QUX automation is added later.
 
+The workflow already has an external CSV export hook. After the QUX command format is confirmed on Windows, connect it like this:
+
+```bat
+run-pwg-lcr-workflow.bat --run-qspice --qspice-exe "C:\Program Files\QSPICE\QSPICE64.exe" --csv-export-command "C:\Program Files\QSPICE\QUX.exe" QUX_ARGUMENTS_HERE "{qraw}" "{csv}"
+```
+
+Supported placeholders:
+
+```text
+{qraw}      generated QSPICE raw file path
+{csv}       target CSV file path
+{case_dir}  PWG LCR case folder
+```
+
+Until QUX arguments are validated, the safe workflow is:
+
+1. Run QSPICE from the command.
+2. Export `pwg_lcr.qraw` to `pwg_lcr.csv`.
+3. Run `run-pwg-lcr-workflow.bat` again to refresh reports.
+
 ## CSV Export Validation
 
 CSV export has been manually validated from the generated `rc_lowpass.qraw`.

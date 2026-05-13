@@ -26,6 +26,7 @@ class PwgLcrWorkflowResult:
     waveform_report_path: Path
     comparison_report_path: Path
     qspice_exit_code: int | None
+    csv_export_exit_code: int | None
 
     @property
     def reports_generated(self) -> bool:
@@ -38,6 +39,7 @@ def run_pwg_lcr_workflow(
     csv_path: Path | None = None,
     qspice_exe: Path | None = None,
     run_qspice: bool = False,
+    csv_export_command: list[str] | None = None,
 ) -> PwgLcrWorkflowResult:
     case_dir = Path(case_dir)
     reports_dir = Path(reports_dir)
@@ -65,6 +67,16 @@ def run_pwg_lcr_workflow(
         qspice_exit_code = completed.returncode
 
     resolved_csv_path = _resolve_csv_path(case_dir, csv_path)
+    csv_export_exit_code: int | None = None
+    if resolved_csv_path is None and csv_export_command is not None:
+        csv_export_exit_code = _run_csv_export_command(
+            csv_export_command,
+            case_dir=case_dir,
+            qraw_path=qraw_path,
+            csv_path=case_dir / "pwg_lcr.csv",
+        )
+        resolved_csv_path = _resolve_csv_path(case_dir, case_dir / "pwg_lcr.csv")
+
     if resolved_csv_path is not None:
         data = read_qspice_csv(resolved_csv_path)
         generate_waveform_report(
@@ -83,6 +95,7 @@ def run_pwg_lcr_workflow(
         waveform_report_path=waveform_report_path,
         comparison_report_path=comparison_report_path,
         qspice_exit_code=qspice_exit_code,
+        csv_export_exit_code=csv_export_exit_code,
     )
 
 
@@ -99,6 +112,27 @@ def _resolve_csv_path(case_dir: Path, csv_path: Path | None) -> Path | None:
     return None
 
 
+def _run_csv_export_command(
+    command: list[str],
+    case_dir: Path,
+    qraw_path: Path,
+    csv_path: Path,
+) -> int:
+    if not qraw_path.exists():
+        raise FileNotFoundError(f"Missing qraw file before CSV export: {qraw_path}")
+
+    expanded_command = [
+        part.format(
+            case_dir=str(case_dir),
+            qraw=str(qraw_path),
+            csv=str(csv_path),
+        )
+        for part in command
+    ]
+    completed = subprocess.run(expanded_command, cwd=case_dir, check=False)
+    return completed.returncode
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="Generate PWG input, optionally run QSPICE, and build PWG LCR reports."
@@ -112,6 +146,11 @@ def main(argv: list[str]) -> int:
         action="store_true",
         help="Run QSPICE before importing CSV results",
     )
+    parser.add_argument(
+        "--csv-export-command",
+        nargs=argparse.REMAINDER,
+        help="Command to export CSV after QSPICE. Supports {qraw}, {csv}, and {case_dir}.",
+    )
     args = parser.parse_args(argv[1:])
 
     result = run_pwg_lcr_workflow(
@@ -120,6 +159,7 @@ def main(argv: list[str]) -> int:
         csv_path=args.csv,
         qspice_exe=args.qspice_exe,
         run_qspice=args.run_qspice,
+        csv_export_command=args.csv_export_command,
     )
 
     _print_result(result)
@@ -134,6 +174,8 @@ def _print_result(result: PwgLcrWorkflowResult) -> None:
     if result.qspice_exit_code is not None:
         print(f"QSPICE exit code: {result.qspice_exit_code}")
         print(f"Found qraw: {'yes' if result.qraw_path.exists() else 'no'}")
+    if result.csv_export_exit_code is not None:
+        print(f"CSV export exit code: {result.csv_export_exit_code}")
     print(f"Imported CSV: {result.csv_path if result.csv_path else 'no CSV available yet'}")
     print(f"Waveform report: {result.waveform_report_path}")
     print(f"Comparison report: {result.comparison_report_path}")
