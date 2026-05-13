@@ -32,6 +32,8 @@ class ProjectDashboardTest(unittest.TestCase):
         self.assertIn("V(out)", html)
         self.assertIn("I(R1)", html)
         self.assertIn("MVP Status", html)
+        self.assertIn("PWG Display Panel", html)
+        self.assertIn("pwg_display_panel_spec.html", html)
 
 
 if __name__ == "__main__":

@@ -109,7 +109,7 @@ def render_project_dashboard(
     .body {{ padding: 16px; }}
     .status {{
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 10px;
     }}
     .metric {{
@@ -221,6 +221,7 @@ def render_project_dashboard(
         <div class="metric"><span>CSV Import</span><strong>{data.sample_count} samples</strong></div>
         <div class="metric"><span>Traces</span><strong>{len(traces)}</strong></div>
         <div class="metric"><span>Waveform Report</span><strong>Ready</strong></div>
+        <div class="metric"><span>PWG Display Panel</span><strong>Specified</strong></div>
       </div>
     </section>
 
@@ -249,6 +250,7 @@ def render_project_dashboard(
           <p class="fileline">Circuit: {circuit_display}</p>
           <p class="fileline">CSV: {csv_display}</p>
           <a class="button" href="{report_href}">Open Waveform Report</a>
+          <a class="button" href="pwg_display_panel_spec.html">Open PWG Display Panel Spec</a>
         </div>
       </section>
     </div>
