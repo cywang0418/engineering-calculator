@@ -252,6 +252,7 @@ def render_project_dashboard(
           <a class="button" href="{report_href}">Open Waveform Report</a>
           <a class="button" href="pwg_display_panel_spec.html">Open PWG Display Panel Spec</a>
           <a class="button" href="pwg_lcr_report.html">Open PWG LCR Result Report</a>
+          <a class="button" href="pwg_lcr_comparison.html">Open PWG Input Output Comparison</a>
           <p class="fileline">PWG LCR test: scripts\\run-qspice-circuit.bat examples\\pwg-lcr\\pwg_lcr.cir</p>
         </div>
       </section>
