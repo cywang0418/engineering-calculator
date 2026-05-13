@@ -251,6 +251,7 @@ def render_project_dashboard(
           <p class="fileline">CSV: {csv_display}</p>
           <a class="button" href="{report_href}">Open Waveform Report</a>
           <a class="button" href="pwg_display_panel_spec.html">Open PWG Display Panel Spec</a>
+          <p class="fileline">PWG LCR test: scripts\\run-qspice-circuit.bat examples\\pwg-lcr\\pwg_lcr.cir</p>
         </div>
       </section>
     </div>

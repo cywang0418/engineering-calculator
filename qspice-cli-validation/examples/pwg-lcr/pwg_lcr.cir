@@ -1,0 +1,12 @@
+* PWG Display Panel validation: 10k Hz sinusoidal input into LCR example
+* PWG defaults: Sinusoidal, Vp=12 V, Vbias=0 V, f=10k Hz
+Vinput in 0 PWL FILE="pwg_input.pwl"
+L1 in n_l 100u
+R_l n_l out 100m
+R_c out n_c 25m
+Cout n_c 0 2.4u
+Rdy out 0 1k
+Ro out 0 1.25
+.tran 0 500u 0 250n
+.save V(in) V(out) I(L1) I(Ro)
+.end
