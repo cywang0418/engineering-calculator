@@ -70,6 +70,29 @@ If QSPICE reports an error and creates a log file, inspect:
 examples\rc-lowpass\rc_lowpass.log
 ```
 
+## One-Command PWG LCR Workflow
+
+From the project root on Windows, run:
+
+```bat
+run-pwg-lcr-workflow.bat
+```
+
+This command regenerates `examples\pwg-lcr\pwg_input.pwl` and, when `examples\pwg-lcr\pwg_lcr.csv` exists, refreshes:
+
+```text
+reports\pwg_lcr_report.html
+reports\pwg_lcr_comparison.html
+```
+
+To also launch QSPICE before importing CSV, run:
+
+```bat
+run-pwg-lcr-workflow.bat --run-qspice --qspice-exe "C:\Program Files\QSPICE\QSPICE64.exe"
+```
+
+QSPICE currently creates `.qraw`; CSV export is still the manual handoff step unless QUX automation is added later.
+
 ## CSV Export Validation
 
 CSV export has been manually validated from the generated `rc_lowpass.qraw`.
