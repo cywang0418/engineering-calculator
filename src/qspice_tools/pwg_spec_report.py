@@ -269,7 +269,7 @@ def render_pwg_spec_report() -> str:
         <div class="box">
           <div class="qspice-title">Qspice</div>
           <div class="circuit">
-            <svg viewBox="0 0 620 200" width="100%" height="185" role="img" aria-label="Qspice LCR circuit">
+            <svg viewBox="0 0 720 240" width="100%" height="185" role="img" aria-label="Qspice LCR circuit">
               <defs>
                 <marker id="arrow-red" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
                   <path d="M0,0 L8,4 L0,8 Z" fill="#d00000"/>
@@ -277,76 +277,91 @@ def render_pwg_spec_report() -> str:
                 <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
                   <path d="M0,0 L8,4 L0,8 Z" fill="#0057d8"/>
                 </marker>
-                <g id="resistor-horizontal">
-                  <polyline points="0,0 8,-12 20,12 32,-12 44,12 56,-12 68,12 80,0" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+                <g id="resistor-box-horizontal">
+                  <line x1="0" y1="0" x2="14" y2="0" stroke="#111" stroke-width="3"/>
+                  <rect x="14" y="-11" width="58" height="22" fill="#fff" stroke="#111" stroke-width="3"/>
+                  <line x1="72" y1="0" x2="86" y2="0" stroke="#111" stroke-width="3"/>
                 </g>
-                <g id="resistor-vertical">
-                  <polyline points="0,0 -12,8 12,20 -12,32 12,44 -12,56 12,68 0,80" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+                <g id="resistor-box-vertical">
+                  <line x1="0" y1="0" x2="0" y2="14" stroke="#111" stroke-width="3"/>
+                  <rect x="-11" y="14" width="22" height="58" fill="#fff" stroke="#111" stroke-width="3"/>
+                  <line x1="0" y1="72" x2="0" y2="86" stroke="#111" stroke-width="3"/>
                 </g>
                 <g id="inductor">
-                  <path d="M0 0 H10 C10 -18 30 -18 30 0 C30 -18 50 -18 50 0 C50 -18 70 -18 70 0 C70 -18 90 -18 90 0 H100" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+                  <line x1="0" y1="0" x2="12" y2="0" stroke="#111" stroke-width="3"/>
+                  <path d="M12 0 C12 -26 34 -26 34 0 C34 -26 56 -26 56 0 C56 -26 78 -26 78 0 C78 -26 100 -26 100 0" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+                  <line x1="100" y1="0" x2="112" y2="0" stroke="#111" stroke-width="3"/>
+                </g>
+                <g id="ground">
+                  <line x1="0" y1="0" x2="0" y2="10" stroke="#111" stroke-width="3"/>
+                  <line x1="-18" y1="10" x2="18" y2="10" stroke="#111" stroke-width="3"/>
+                  <line x1="-12" y1="18" x2="12" y2="18" stroke="#111" stroke-width="3"/>
+                  <line x1="-6" y1="26" x2="6" y2="26" stroke="#111" stroke-width="3"/>
                 </g>
               </defs>
 
-              <rect x="14" y="8" width="592" height="174" rx="4" fill="#fff" stroke="#9bb9ef" stroke-width="2"/>
+              <rect x="16" y="12" width="688" height="210" rx="4" fill="#fff" stroke="#9bb9ef" stroke-width="2"/>
 
-              <line x1="70" y1="145" x2="555" y2="145" stroke="#111" stroke-width="3"/>
-              <line x1="70" y1="72" x2="112" y2="72" stroke="#111" stroke-width="3"/>
+              <line x1="70" y1="180" x2="654" y2="180" stroke="#111" stroke-width="3"/>
+              <use href="#ground" x="362" y="180"/>
 
-              <circle cx="70" cy="108" r="25" fill="#f8fff8" stroke="#111" stroke-width="3"/>
-              <path d="M52 108 C58 92 66 92 72 108 S86 124 92 108" fill="none" stroke="#0a9b3f" stroke-width="3" stroke-linecap="round"/>
-              <line x1="70" y1="72" x2="70" y2="83" stroke="#111" stroke-width="3"/>
-              <line x1="70" y1="133" x2="70" y2="145" stroke="#111" stroke-width="3"/>
-              <text x="45" y="66" font-size="18" font-weight="700">+</text>
-              <text x="47" y="134" font-size="18" font-weight="700">-</text>
-              <text x="31" y="111" font-size="17">v<tspan baseline-shift="sub">s</tspan></text>
+              <circle cx="78" cy="122" r="28" fill="#fff" stroke="#111" stroke-width="3"/>
+              <path d="M57 122 C64 104 72 104 79 122 S94 140 101 122" fill="none" stroke="#0a9b3f" stroke-width="3" stroke-linecap="round"/>
+              <line x1="78" y1="88" x2="78" y2="94" stroke="#111" stroke-width="3"/>
+              <line x1="78" y1="150" x2="78" y2="180" stroke="#111" stroke-width="3"/>
+              <line x1="78" y1="88" x2="124" y2="88" stroke="#111" stroke-width="3"/>
+              <text x="41" y="97" font-size="17" font-weight="700">+</text>
+              <text x="43" y="153" font-size="17" font-weight="700">-</text>
+              <text x="44" y="72" font-size="16">v<tspan baseline-shift="sub">s</tspan></text>
+              <text x="43" y="202" font-size="13" fill="#475467">PWG source</text>
 
-              <use href="#inductor" x="112" y="72"/>
-              <text x="152" y="45" font-size="18">L</text>
-              <text x="122" y="104" font-size="13" fill="#475467">100 uH</text>
+              <use href="#inductor" x="124" y="88"/>
+              <text x="162" y="48" font-size="18">L</text>
+              <text x="147" y="127" font-size="13" fill="#475467">100 uH</text>
 
-              <line x1="212" y1="72" x2="232" y2="72" stroke="#111" stroke-width="3"/>
-              <use href="#resistor-horizontal" x="232" y="72"/>
-              <text x="256" y="45" font-size="16">r<tspan baseline-shift="sub">L</tspan></text>
-              <text x="238" y="104" font-size="13" fill="#475467">100 mΩ</text>
-              <line x1="312" y1="72" x2="366" y2="72" stroke="#111" stroke-width="3"/>
+              <line x1="236" y1="88" x2="256" y2="88" stroke="#111" stroke-width="3"/>
+              <use href="#resistor-box-horizontal" x="256" y="88"/>
+              <text x="286" y="48" font-size="16">r<tspan baseline-shift="sub">L</tspan></text>
+              <text x="271" y="127" font-size="13" fill="#475467">100 mΩ</text>
+              <line x1="342" y1="88" x2="390" y2="88" stroke="#111" stroke-width="3"/>
 
-              <circle cx="366" cy="72" r="4" fill="#111"/>
-              <line x1="366" y1="72" x2="366" y2="145" stroke="#111" stroke-width="3"/>
-              <line x1="337" y1="101" x2="395" y2="101" stroke="#111" stroke-width="3"/>
-              <line x1="337" y1="116" x2="395" y2="116" stroke="#111" stroke-width="3"/>
-              <text x="402" y="111" font-size="18">C<tspan baseline-shift="sub">out</tspan></text>
-              <text x="398" y="132" font-size="13" fill="#475467">2.4 uF</text>
+              <circle cx="390" cy="88" r="4" fill="#111"/>
+              <line x1="390" y1="88" x2="390" y2="130" stroke="#111" stroke-width="3"/>
+              <line x1="361" y1="130" x2="419" y2="130" stroke="#111" stroke-width="3"/>
+              <line x1="361" y1="145" x2="419" y2="145" stroke="#111" stroke-width="3"/>
+              <line x1="390" y1="145" x2="390" y2="180" stroke="#111" stroke-width="3"/>
+              <text x="355" y="116" font-size="18">C<tspan baseline-shift="sub">out</tspan></text>
+              <text x="423" y="141" font-size="13" fill="#475467">2.4 uF</text>
 
-              <line x1="366" y1="72" x2="434" y2="72" stroke="#111" stroke-width="3"/>
-              <use href="#resistor-horizontal" x="434" y="72"/>
-              <text x="458" y="45" font-size="16">r<tspan baseline-shift="sub">C</tspan></text>
-              <text x="440" y="104" font-size="13" fill="#475467">25 mΩ</text>
+              <line x1="390" y1="88" x2="456" y2="88" stroke="#111" stroke-width="3"/>
+              <use href="#resistor-box-horizontal" x="456" y="88"/>
+              <text x="486" y="48" font-size="16">r<tspan baseline-shift="sub">C</tspan></text>
+              <text x="476" y="127" font-size="13" fill="#475467">25 mΩ</text>
+              <line x1="542" y1="88" x2="586" y2="88" stroke="#111" stroke-width="3"/>
 
-              <line x1="514" y1="72" x2="548" y2="72" stroke="#111" stroke-width="3"/>
-              <circle cx="548" cy="72" r="4" fill="#111"/>
-              <line x1="548" y1="72" x2="548" y2="82" stroke="#111" stroke-width="3"/>
-              <use href="#resistor-vertical" x="548" y="82"/>
-              <line x1="548" y1="162" x2="548" y2="145" stroke="#111" stroke-width="3"/>
-              <text x="568" y="123" font-size="18">R<tspan baseline-shift="sub">o</tspan></text>
-              <text x="568" y="141" font-size="13" fill="#475467">1.25 Ω</text>
+              <circle cx="586" cy="88" r="4" fill="#111"/>
+              <line x1="586" y1="88" x2="586" y2="96" stroke="#111" stroke-width="3"/>
+              <use href="#resistor-box-vertical" x="586" y="96"/>
+              <line x1="586" y1="182" x2="586" y2="180" stroke="#111" stroke-width="3"/>
+              <text x="606" y="124" font-size="18">R<tspan baseline-shift="sub">o</tspan></text>
+              <text x="605" y="143" font-size="13" fill="#475467">1.25 Ω</text>
 
-              <line x1="506" y1="72" x2="506" y2="86" stroke="#111" stroke-width="3"/>
-              <use href="#resistor-vertical" x="506" y="86"/>
-              <line x1="506" y1="166" x2="506" y2="145" stroke="#111" stroke-width="3"/>
-              <text x="463" y="133" font-size="17">R<tspan baseline-shift="sub">dy</tspan></text>
-              <text x="460" y="151" font-size="13" fill="#475467">1 kΩ</text>
+              <line x1="636" y1="88" x2="636" y2="96" stroke="#111" stroke-width="3"/>
+              <use href="#resistor-box-vertical" x="636" y="96"/>
+              <line x1="636" y1="182" x2="636" y2="180" stroke="#111" stroke-width="3"/>
+              <line x1="586" y1="88" x2="636" y2="88" stroke="#111" stroke-width="3"/>
+              <text x="653" y="124" font-size="17">R<tspan baseline-shift="sub">dy</tspan></text>
+              <text x="653" y="143" font-size="13" fill="#475467">1 kΩ</text>
 
-              <line x1="300" y1="52" x2="356" y2="52" stroke="#d00000" stroke-width="2.4" marker-end="url(#arrow-red)"/>
-              <text x="317" y="44" fill="#d00000" font-size="13">i<tspan baseline-shift="sub">L</tspan></text>
-              <line x1="366" y1="132" x2="366" y2="88" stroke="#0057d8" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
-              <text x="373" y="97" fill="#0057d8" font-size="13">v<tspan baseline-shift="sub">o</tspan></text>
-              <line x1="548" y1="90" x2="548" y2="132" stroke="#d00000" stroke-width="2.4" marker-end="url(#arrow-red)"/>
-              <text x="555" y="106" fill="#d00000" font-size="13">i<tspan baseline-shift="sub">o</tspan></text>
+              <line x1="230" y1="62" x2="326" y2="62" stroke="#d00000" stroke-width="2.4" marker-end="url(#arrow-red)"/>
+              <text x="271" y="54" fill="#d00000" font-size="13">i<tspan baseline-shift="sub">L</tspan></text>
+              <line x1="410" y1="170" x2="410" y2="103" stroke="#0057d8" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+              <text x="419" y="109" fill="#0057d8" font-size="13">v<tspan baseline-shift="sub">o</tspan></text>
+              <line x1="568" y1="101" x2="568" y2="157" stroke="#d00000" stroke-width="2.4" marker-end="url(#arrow-red)"/>
+              <text x="542" y="134" fill="#d00000" font-size="13">i<tspan baseline-shift="sub">o</tspan></text>
 
-              <text x="74" y="33" font-size="13" fill="#475467">PWG source</text>
-              <text x="201" y="33" font-size="13" fill="#475467">series L + ESR</text>
-              <text x="370" y="33" font-size="13" fill="#475467">output filter and load</text>
+              <text x="214" y="25" font-size="13" fill="#475467">series inductor and ESR</text>
+              <text x="425" y="25" font-size="13" fill="#475467">output capacitor ESR and load network</text>
             </svg>
           </div>
           <div class="tables">
