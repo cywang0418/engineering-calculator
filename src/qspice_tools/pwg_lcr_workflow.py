@@ -14,6 +14,12 @@ from src.qspice_tools.waveform_report import generate_waveform_report
 
 DEFAULT_CASE_DIR = Path("qspice-cli-validation/examples/pwg-lcr")
 DEFAULT_REPORTS_DIR = Path("reports")
+KNOWN_QSPICE_EXE_PATHS = (
+    Path(r"C:\Program Files\QSPICE\QSPICE64.exe"),
+    Path(r"C:\Program Files\QSPICE\QSPICE80.exe"),
+)
+KNOWN_QUX_EXE_PATHS = (Path(r"C:\Program Files\QSPICE\QUX.exe"),)
+DEFAULT_EXPORT_TRACES = ("V(in)", "V(out)", "I(L1)", "I(Ro)")
 
 
 @dataclass(frozen=True)
@@ -38,6 +44,7 @@ def run_pwg_lcr_workflow(
     reports_dir: Path,
     csv_path: Path | None = None,
     qspice_exe: Path | None = None,
+    qux_exe: Path | None = None,
     run_qspice: bool = False,
     csv_export_command: list[str] | None = None,
 ) -> PwgLcrWorkflowResult:
@@ -57,8 +64,13 @@ def run_pwg_lcr_workflow(
 
     qspice_exit_code: int | None = None
     if run_qspice:
+        qspice_exe = qspice_exe or discover_qspice_exe()
         if qspice_exe is None:
-            raise ValueError("qspice_exe is required when run_qspice is enabled")
+            candidates = ", ".join(str(path) for path in KNOWN_QSPICE_EXE_PATHS)
+            raise FileNotFoundError(
+                "QSPICE executable was not found. Pass --qspice-exe or install QSPICE at "
+                f"one of: {candidates}"
+            )
         completed = subprocess.run(
             [str(qspice_exe), str(circuit_path.name)],
             cwd=case_dir,
@@ -66,9 +78,32 @@ def run_pwg_lcr_workflow(
         )
         qspice_exit_code = completed.returncode
 
-    resolved_csv_path = _resolve_csv_path(case_dir, csv_path)
     csv_export_exit_code: int | None = None
-    if resolved_csv_path is None and csv_export_command is not None:
+    if run_qspice and csv_path is None:
+        if csv_export_command is not None:
+            csv_export_exit_code = _run_csv_export_command(
+                csv_export_command,
+                case_dir=case_dir,
+                qraw_path=qraw_path,
+                csv_path=case_dir / "pwg_lcr.csv",
+            )
+        else:
+            qux_exe = qux_exe or discover_qux_exe()
+            if qux_exe is None:
+                candidates = ", ".join(str(path) for path in KNOWN_QUX_EXE_PATHS)
+                raise FileNotFoundError(
+                    "QUX executable was not found. Pass --qux-exe or install QSPICE at "
+                    f"one of: {candidates}"
+                )
+            csv_export_exit_code = export_qraw_to_csv(
+                qux_exe=qux_exe,
+                qraw_path=qraw_path,
+                csv_path=case_dir / "pwg_lcr.csv",
+                traces=DEFAULT_EXPORT_TRACES,
+            )
+
+    resolved_csv_path = _resolve_csv_path(case_dir, csv_path)
+    if resolved_csv_path is None and csv_export_command is not None and not run_qspice:
         csv_export_exit_code = _run_csv_export_command(
             csv_export_command,
             case_dir=case_dir,
@@ -97,6 +132,49 @@ def run_pwg_lcr_workflow(
         qspice_exit_code=qspice_exit_code,
         csv_export_exit_code=csv_export_exit_code,
     )
+
+
+def discover_qspice_exe(candidates: tuple[Path, ...] = KNOWN_QSPICE_EXE_PATHS) -> Path | None:
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def discover_qux_exe(candidates: tuple[Path, ...] = KNOWN_QUX_EXE_PATHS) -> Path | None:
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def export_qraw_to_csv(
+    qux_exe: Path,
+    qraw_path: Path,
+    csv_path: Path,
+    traces: tuple[str, ...] = DEFAULT_EXPORT_TRACES,
+    npoints: str = "all",
+) -> int:
+    if not qraw_path.exists():
+        raise FileNotFoundError(f"Missing qraw file before CSV export: {qraw_path}")
+
+    completed = subprocess.run(
+        [
+            str(qux_exe),
+            "-Export",
+            str(qraw_path),
+            ",".join(traces),
+            npoints,
+            "CSV",
+            "-stdout",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode == 0:
+        csv_path.write_text(completed.stdout, encoding="utf-8")
+    return completed.returncode
 
 
 def _resolve_csv_path(case_dir: Path, csv_path: Path | None) -> Path | None:
@@ -141,10 +219,11 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--reports-dir", type=Path, default=DEFAULT_REPORTS_DIR)
     parser.add_argument("--csv", type=Path, default=None, help="QSPICE-exported CSV file")
     parser.add_argument("--qspice-exe", type=Path, default=None, help="Path to QSPICE64.exe")
+    parser.add_argument("--qux-exe", type=Path, default=None, help="Path to QUX.exe")
     parser.add_argument(
         "--run-qspice",
         action="store_true",
-        help="Run QSPICE before importing CSV results",
+        help="Run QSPICE and export fresh CSV results with QUX",
     )
     parser.add_argument(
         "--csv-export-command",
@@ -158,6 +237,7 @@ def main(argv: list[str]) -> int:
         reports_dir=args.reports_dir,
         csv_path=args.csv,
         qspice_exe=args.qspice_exe,
+        qux_exe=args.qux_exe,
         run_qspice=args.run_qspice,
         csv_export_command=args.csv_export_command,
     )

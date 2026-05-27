@@ -88,15 +88,41 @@ reports\pwg_lcr_comparison.html
 To also launch QSPICE before importing CSV, run:
 
 ```bat
+run-pwg-lcr-workflow.bat --run-qspice
+```
+
+The workflow checks the common Windows install paths first:
+
+```text
+C:\Program Files\QSPICE\QSPICE64.exe
+C:\Program Files\QSPICE\QSPICE80.exe
+```
+
+If QSPICE is installed somewhere else, pass the executable path:
+
+```bat
 run-pwg-lcr-workflow.bat --run-qspice --qspice-exe "C:\Program Files\QSPICE\QSPICE64.exe"
 ```
 
-QSPICE currently creates `.qraw`; CSV export is still the manual handoff step unless QUX automation is added later.
+When `--run-qspice` is used, the workflow now exports a fresh CSV from `pwg_lcr.qraw`
+with QUX before rebuilding the reports.
 
-The workflow already has an external CSV export hook. After the QUX command format is confirmed on Windows, connect it like this:
+The QUX command used by the workflow is equivalent to:
 
 ```bat
-run-pwg-lcr-workflow.bat --run-qspice --qspice-exe "C:\Program Files\QSPICE\QSPICE64.exe" --csv-export-command "C:\Program Files\QSPICE\QUX.exe" QUX_ARGUMENTS_HERE "{qraw}" "{csv}"
+"C:\Program Files\QSPICE\QUX.exe" -Export pwg_lcr.qraw "V(in),V(out),I(L1),I(Ro)" all CSV -stdout
+```
+
+The workflow captures QUX stdout and writes it to:
+
+```text
+qspice-cli-validation\examples\pwg-lcr\pwg_lcr.csv
+```
+
+An external CSV export hook is still available for experiments or alternate export tools:
+
+```bat
+run-pwg-lcr-workflow.bat --run-qspice --csv-export-command TOOL_ARGUMENTS_HERE
 ```
 
 Supported placeholders:
@@ -106,12 +132,6 @@ Supported placeholders:
 {csv}       target CSV file path
 {case_dir}  PWG LCR case folder
 ```
-
-Until QUX arguments are validated, the safe workflow is:
-
-1. Run QSPICE from the command.
-2. Export `pwg_lcr.qraw` to `pwg_lcr.csv`.
-3. Run `run-pwg-lcr-workflow.bat` again to refresh reports.
 
 ## CSV Export Validation
 
