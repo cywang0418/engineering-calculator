@@ -240,42 +240,81 @@
             <svg viewBox="0 0 620 200" width="100%" height="185" role="img" aria-label="Qspice LCR circuit">
               <defs>
                 <marker id="arrow-red" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-                  <path d="M0,0 L8,4 L0,8 Z" fill="#e10000"/>
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#d00000"/>
                 </marker>
                 <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-                  <path d="M0,0 L8,4 L0,8 Z" fill="#0037ff"/>
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#0057d8"/>
                 </marker>
+                <g id="resistor-horizontal">
+                  <polyline points="0,0 8,-12 20,12 32,-12 44,12 56,-12 68,12 80,0" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+                </g>
+                <g id="resistor-vertical">
+                  <polyline points="0,0 -12,8 12,20 -12,32 12,44 -12,56 12,68 0,80" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+                </g>
+                <g id="inductor">
+                  <path d="M0 0 H10 C10 -18 30 -18 30 0 C30 -18 50 -18 50 0 C50 -18 70 -18 70 0 C70 -18 90 -18 90 0 H100" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+                </g>
               </defs>
-              <line x1="70" y1="60" x2="140" y2="60" stroke="#111" stroke-width="3"/>
-              <line x1="70" y1="150" x2="500" y2="150" stroke="#111" stroke-width="3"/>
-              <circle cx="70" cy="105" r="24" fill="#d9ffd9" stroke="#119d34" stroke-width="3"/>
-              <path d="M54 105 C60 88 66 88 72 105 S84 122 90 105" fill="none" stroke="#119d34" stroke-width="3"/>
-              <line x1="70" y1="60" x2="70" y2="81" stroke="#111" stroke-width="3"/>
-              <line x1="70" y1="129" x2="70" y2="150" stroke="#111" stroke-width="3"/>
-              <text x="34" y="55" font-size="18">+</text><text x="34" y="122" font-size="18">−</text><text x="38" y="101" font-size="16">v<tspan baseline-shift="sub">s</tspan></text>
-              <path d="M140 60 q8 -18 16 0 q8 18 16 0 q8 -18 16 0 q8 18 16 0 q8 -18 16 0" fill="none" stroke="#a00000" stroke-width="4"/>
-              <line x1="220" y1="60" x2="245" y2="60" stroke="#111" stroke-width="3"/>
-              <polyline points="245,60 253,48 261,72 269,48 277,72 285,48 293,72 301,60" fill="none" stroke="#111" stroke-width="3"/>
-              <line x1="301" y1="60" x2="485" y2="60" stroke="#111" stroke-width="3"/>
-              <line x1="360" y1="60" x2="360" y2="150" stroke="#111" stroke-width="3"/>
-              <line x1="330" y1="92" x2="390" y2="92" stroke="#111" stroke-width="3"/>
-              <line x1="330" y1="108" x2="390" y2="108" stroke="#111" stroke-width="3"/>
-              <polyline points="430,60 438,72 446,48 454,72 462,48 470,72 478,48 486,60" fill="none" stroke="#111" stroke-width="3"/>
-              <line x1="486" y1="60" x2="486" y2="150" stroke="#111" stroke-width="3"/>
-              <line x1="540" y1="60" x2="540" y2="150" stroke="#111" stroke-width="3"/>
-              <polyline points="540,78 528,86 552,94 528,102 552,110 528,118 552,126 540,134" fill="none" stroke="#111" stroke-width="3"/>
-              <line x1="485" y1="60" x2="560" y2="60" stroke="#111" stroke-width="3"/>
-              <line x1="486" y1="150" x2="560" y2="150" stroke="#111" stroke-width="3"/>
-              <ellipse cx="200" cy="58" rx="95" ry="38" fill="none" stroke="#a020ff" stroke-width="2.5" stroke-dasharray="8 7"/>
-              <ellipse cx="368" cy="104" rx="84" ry="52" fill="none" stroke="#e10000" stroke-width="2.5" stroke-dasharray="8 7"/>
-              <line x1="105" y1="42" x2="150" y2="42" stroke="#e10000" stroke-width="2" marker-end="url(#arrow-red)"/>
-              <line x1="300" y1="42" x2="345" y2="42" stroke="#e10000" stroke-width="2" marker-end="url(#arrow-red)"/>
-              <line x1="520" y1="43" x2="575" y2="43" stroke="#e10000" stroke-width="2" marker-end="url(#arrow-red)"/>
-              <line x1="330" y1="137" x2="330" y2="86" stroke="#e10000" stroke-width="2" marker-end="url(#arrow-red)"/>
-              <line x1="515" y1="80" x2="515" y2="128" stroke="#e10000" stroke-width="2" marker-end="url(#arrow-red)"/>
-              <line x1="300" y1="144" x2="300" y2="72" stroke="#0037ff" stroke-width="2" marker-end="url(#arrow-blue)"/>
-              <text x="172" y="42" font-size="18">L</text><text x="267" y="43" font-size="16">r<tspan baseline-shift="sub">L</tspan></text>
-              <text x="375" y="120" font-size="20">C</text><text x="456" y="100" font-size="16">r<tspan baseline-shift="sub">c</tspan></text><text x="558" y="111" font-size="16">R<tspan baseline-shift="sub">o</tspan></text>
+
+              <rect x="14" y="8" width="592" height="174" rx="4" fill="#fff" stroke="#9bb9ef" stroke-width="2"/>
+
+              <line x1="70" y1="145" x2="555" y2="145" stroke="#111" stroke-width="3"/>
+              <line x1="70" y1="72" x2="112" y2="72" stroke="#111" stroke-width="3"/>
+
+              <circle cx="70" cy="108" r="25" fill="#f8fff8" stroke="#111" stroke-width="3"/>
+              <path d="M52 108 C58 92 66 92 72 108 S86 124 92 108" fill="none" stroke="#0a9b3f" stroke-width="3" stroke-linecap="round"/>
+              <line x1="70" y1="72" x2="70" y2="83" stroke="#111" stroke-width="3"/>
+              <line x1="70" y1="133" x2="70" y2="145" stroke="#111" stroke-width="3"/>
+              <text x="45" y="66" font-size="18" font-weight="700">+</text>
+              <text x="47" y="134" font-size="18" font-weight="700">-</text>
+              <text x="31" y="111" font-size="17">v<tspan baseline-shift="sub">s</tspan></text>
+
+              <use href="#inductor" x="112" y="72"/>
+              <text x="152" y="45" font-size="18">L</text>
+              <text x="122" y="104" font-size="13" fill="#475467">100 uH</text>
+
+              <line x1="212" y1="72" x2="232" y2="72" stroke="#111" stroke-width="3"/>
+              <use href="#resistor-horizontal" x="232" y="72"/>
+              <text x="256" y="45" font-size="16">r<tspan baseline-shift="sub">L</tspan></text>
+              <text x="238" y="104" font-size="13" fill="#475467">100 mΩ</text>
+              <line x1="312" y1="72" x2="366" y2="72" stroke="#111" stroke-width="3"/>
+
+              <circle cx="366" cy="72" r="4" fill="#111"/>
+              <line x1="366" y1="72" x2="366" y2="145" stroke="#111" stroke-width="3"/>
+              <line x1="337" y1="101" x2="395" y2="101" stroke="#111" stroke-width="3"/>
+              <line x1="337" y1="116" x2="395" y2="116" stroke="#111" stroke-width="3"/>
+              <text x="402" y="111" font-size="18">C<tspan baseline-shift="sub">out</tspan></text>
+              <text x="398" y="132" font-size="13" fill="#475467">2.4 uF</text>
+
+              <line x1="366" y1="72" x2="434" y2="72" stroke="#111" stroke-width="3"/>
+              <use href="#resistor-horizontal" x="434" y="72"/>
+              <text x="458" y="45" font-size="16">r<tspan baseline-shift="sub">C</tspan></text>
+              <text x="440" y="104" font-size="13" fill="#475467">25 mΩ</text>
+
+              <line x1="514" y1="72" x2="548" y2="72" stroke="#111" stroke-width="3"/>
+              <circle cx="548" cy="72" r="4" fill="#111"/>
+              <line x1="548" y1="72" x2="548" y2="82" stroke="#111" stroke-width="3"/>
+              <use href="#resistor-vertical" x="548" y="82"/>
+              <line x1="548" y1="162" x2="548" y2="145" stroke="#111" stroke-width="3"/>
+              <text x="568" y="123" font-size="18">R<tspan baseline-shift="sub">o</tspan></text>
+              <text x="568" y="141" font-size="13" fill="#475467">1.25 Ω</text>
+
+              <line x1="506" y1="72" x2="506" y2="86" stroke="#111" stroke-width="3"/>
+              <use href="#resistor-vertical" x="506" y="86"/>
+              <line x1="506" y1="166" x2="506" y2="145" stroke="#111" stroke-width="3"/>
+              <text x="463" y="133" font-size="17">R<tspan baseline-shift="sub">dy</tspan></text>
+              <text x="460" y="151" font-size="13" fill="#475467">1 kΩ</text>
+
+              <line x1="300" y1="52" x2="356" y2="52" stroke="#d00000" stroke-width="2.4" marker-end="url(#arrow-red)"/>
+              <text x="317" y="44" fill="#d00000" font-size="13">i<tspan baseline-shift="sub">L</tspan></text>
+              <line x1="366" y1="132" x2="366" y2="88" stroke="#0057d8" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+              <text x="373" y="97" fill="#0057d8" font-size="13">v<tspan baseline-shift="sub">o</tspan></text>
+              <line x1="548" y1="90" x2="548" y2="132" stroke="#d00000" stroke-width="2.4" marker-end="url(#arrow-red)"/>
+              <text x="555" y="106" fill="#d00000" font-size="13">i<tspan baseline-shift="sub">o</tspan></text>
+
+              <text x="74" y="33" font-size="13" fill="#475467">PWG source</text>
+              <text x="201" y="33" font-size="13" fill="#475467">series L + ESR</text>
+              <text x="370" y="33" font-size="13" fill="#475467">output filter and load</text>
             </svg>
           </div>
           <div class="tables">
