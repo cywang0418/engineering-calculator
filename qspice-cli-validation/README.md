@@ -78,6 +78,21 @@ From the project root on Windows, run:
 run-pwg-lcr-workflow.bat
 ```
 
+For the local clickable UI, run this from the project root:
+
+```bat
+run-local-ui.bat
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8765
+```
+
+The UI has a `Run PWG LCR` button that runs QSPICE, exports CSV through QUX,
+refreshes the reports, and updates the displayed trace statistics.
+
 This command regenerates `examples\pwg-lcr\pwg_input.pwl` and, when `examples\pwg-lcr\pwg_lcr.csv` exists, refreshes:
 
 ```text
