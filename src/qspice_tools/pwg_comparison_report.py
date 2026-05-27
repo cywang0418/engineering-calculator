@@ -17,13 +17,17 @@ from src.qspice_tools.waveform_report import (
 )
 
 
-def generate_pwg_comparison_report(data: QspiceCsvData, output_path: Path) -> None:
-    html_text = render_pwg_comparison_report(data)
+def generate_pwg_comparison_report(
+    data: QspiceCsvData,
+    output_path: Path,
+    frequency_hz: float = 10_000.0,
+) -> None:
+    html_text = render_pwg_comparison_report(data, frequency_hz=frequency_hz)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(html_text, encoding="utf-8")
 
 
-def render_pwg_comparison_report(data: QspiceCsvData) -> str:
+def render_pwg_comparison_report(data: QspiceCsvData, frequency_hz: float = 10_000.0) -> str:
     vin = data.trace("V(in)")
     vout = data.trace("V(out)")
     times = data.time
@@ -31,6 +35,8 @@ def render_pwg_comparison_report(data: QspiceCsvData) -> str:
     vout_stats = data.stats("V(out)")
     peak_gain = _peak_to_peak(vout) / _peak_to_peak(vin)
     rms_gain = vout_stats.rms / vin_stats.rms
+
+    frequency_label = _format_frequency_label(frequency_hz)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -158,7 +164,7 @@ def render_pwg_comparison_report(data: QspiceCsvData) -> str:
 <body>
   <header>
     <h1>PWG Input Output Comparison</h1>
-    <p>10k Hz sinusoidal PWG input compared with QSPICE LCR output.</p>
+    <p>{frequency_label} sinusoidal PWG input compared with QSPICE LCR output.</p>
   </header>
   <main>
     <section>
@@ -254,6 +260,12 @@ def _row(trace: str, stats) -> str:
 
 def _peak_to_peak(values: list[float]) -> float:
     return max(values) - min(values)
+
+
+def _format_frequency_label(frequency_hz: float) -> str:
+    if frequency_hz >= 1000 and frequency_hz % 1000 == 0:
+        return f"{int(frequency_hz / 1000)}k Hz"
+    return f"{_format_number(frequency_hz)} Hz"
 
 
 def main(argv: list[str]) -> int:

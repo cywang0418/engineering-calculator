@@ -45,6 +45,7 @@ def run_pwg_lcr_workflow(
     csv_path: Path | None = None,
     qspice_exe: Path | None = None,
     qux_exe: Path | None = None,
+    pwg_config: PwgConfig | None = None,
     run_qspice: bool = False,
     csv_export_command: list[str] | None = None,
 ) -> PwgLcrWorkflowResult:
@@ -59,7 +60,8 @@ def run_pwg_lcr_workflow(
     if not circuit_path.exists():
         raise FileNotFoundError(f"Missing circuit file: {circuit_path}")
 
-    samples = generate_sine_pwl(PwgConfig.default())
+    config = pwg_config or PwgConfig.default()
+    samples = generate_sine_pwl(config)
     write_pwl(samples, pwl_path)
 
     qspice_exit_code: int | None = None
@@ -119,7 +121,11 @@ def run_pwg_lcr_workflow(
             waveform_report_path,
             title="PWG LCR QSPICE Result",
         )
-        generate_pwg_comparison_report(data, comparison_report_path)
+        generate_pwg_comparison_report(
+            data,
+            comparison_report_path,
+            frequency_hz=config.frequency_hz,
+        )
 
     return PwgLcrWorkflowResult(
         case_dir=case_dir,
@@ -220,6 +226,9 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--csv", type=Path, default=None, help="QSPICE-exported CSV file")
     parser.add_argument("--qspice-exe", type=Path, default=None, help="Path to QSPICE64.exe")
     parser.add_argument("--qux-exe", type=Path, default=None, help="Path to QUX.exe")
+    parser.add_argument("--amplitude-v", type=float, default=PwgConfig.default().amplitude_v)
+    parser.add_argument("--bias-v", type=float, default=PwgConfig.default().bias_v)
+    parser.add_argument("--frequency-hz", type=float, default=PwgConfig.default().frequency_hz)
     parser.add_argument(
         "--run-qspice",
         action="store_true",
@@ -238,6 +247,14 @@ def main(argv: list[str]) -> int:
         csv_path=args.csv,
         qspice_exe=args.qspice_exe,
         qux_exe=args.qux_exe,
+        pwg_config=PwgConfig(
+            waveform="Sinusoidal",
+            amplitude_v=args.amplitude_v,
+            bias_v=args.bias_v,
+            frequency_hz=args.frequency_hz,
+            cycles=PwgConfig.default().cycles,
+            samples_per_cycle=PwgConfig.default().samples_per_cycle,
+        ),
         run_qspice=args.run_qspice,
         csv_export_command=args.csv_export_command,
     )

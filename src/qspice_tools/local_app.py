@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from src.qspice_tools.csv_reader import read_qspice_csv
+from src.qspice_tools.pwg_generator import PwgConfig
 from src.qspice_tools.pwg_lcr_workflow import run_pwg_lcr_workflow
 from src.qspice_tools.waveform_report import _format_number
 
@@ -16,6 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CASE_DIR = PROJECT_ROOT / "qspice-cli-validation" / "examples" / "pwg-lcr"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 CSV_PATH = CASE_DIR / "pwg_lcr.csv"
+DEFAULT_CONFIG = PwgConfig.default()
 
 
 class QspiceAppHandler(BaseHTTPRequestHandler):
@@ -39,17 +41,22 @@ class QspiceAppHandler(BaseHTTPRequestHandler):
             return
 
         try:
+            config = _pwg_config_from_payload(self._read_json())
             result = run_pwg_lcr_workflow(
                 case_dir=CASE_DIR,
                 reports_dir=REPORTS_DIR,
+                pwg_config=config,
                 run_qspice=True,
             )
+            status = build_status()
+            status["config"] = _config_payload(config)
             self._send_json(
                 {
                     "ok": True,
                     "qspiceExitCode": result.qspice_exit_code,
                     "csvExportExitCode": result.csv_export_exit_code,
-                    "status": build_status(),
+                    "config": _config_payload(config),
+                    "status": status,
                 }
             )
         except Exception as exc:
@@ -93,6 +100,13 @@ class QspiceAppHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _read_json(self) -> dict:
+        length = int(self.headers.get("Content-Length", "0"))
+        if length == 0:
+            return {}
+        raw = self.rfile.read(length).decode("utf-8")
+        return json.loads(raw)
+
 
 def build_status() -> dict:
     status = {
@@ -105,6 +119,7 @@ def build_status() -> dict:
         "sampleCount": 0,
         "traces": [],
         "stats": {},
+        "config": _config_payload(DEFAULT_CONFIG),
     }
     if not CSV_PATH.exists():
         return status
@@ -123,6 +138,51 @@ def build_status() -> dict:
             "rms": stats.rms,
         }
     return status
+
+
+def _pwg_config_from_payload(payload: dict) -> PwgConfig:
+    return PwgConfig(
+        waveform="Sinusoidal",
+        amplitude_v=_positive_float(payload.get("amplitudeV"), "amplitudeV"),
+        bias_v=_float(payload.get("biasV"), "biasV"),
+        frequency_hz=_positive_float(payload.get("frequencyHz"), "frequencyHz"),
+        cycles=DEFAULT_CONFIG.cycles,
+        samples_per_cycle=DEFAULT_CONFIG.samples_per_cycle,
+    )
+
+
+def _float(value, name: str) -> float:
+    if value is None or value == "":
+        return getattr(DEFAULT_CONFIG, _payload_name_to_config_attr(name))
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a number") from exc
+
+
+def _positive_float(value, name: str) -> float:
+    number = _float(value, name)
+    if number <= 0:
+        raise ValueError(f"{name} must be greater than zero")
+    return number
+
+
+def _payload_name_to_config_attr(name: str) -> str:
+    return {
+        "amplitudeV": "amplitude_v",
+        "biasV": "bias_v",
+        "frequencyHz": "frequency_hz",
+    }[name]
+
+
+def _config_payload(config: PwgConfig) -> dict:
+    return {
+        "amplitudeV": config.amplitude_v,
+        "biasV": config.bias_v,
+        "frequencyHz": config.frequency_hz,
+        "cycles": config.cycles,
+        "samplesPerCycle": config.samples_per_cycle,
+    }
 
 
 def render_app() -> str:
@@ -220,6 +280,27 @@ def render_app() -> str:
     }}
     .run-button:hover {{ background: var(--accent-dark); }}
     .run-button:disabled {{ background: #90a4b8; cursor: wait; }}
+    .form-grid {{
+      display: grid;
+      gap: 10px;
+      margin-bottom: 12px;
+    }}
+    label {{
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }}
+    input {{
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 9px 10px;
+      color: var(--ink);
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }}
     .status-grid {{
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -326,6 +407,17 @@ def render_app() -> str:
         <section>
           <h2>Run</h2>
           <div class="body">
+            <div class="form-grid">
+              <label>Amplitude Vp
+                <input id="amplitude-v" type="number" min="0.1" step="0.1" value="{DEFAULT_CONFIG.amplitude_v}">
+              </label>
+              <label>Bias Voltage
+                <input id="bias-v" type="number" step="0.1" value="{DEFAULT_CONFIG.bias_v}">
+              </label>
+              <label>Frequency Hz
+                <input id="frequency-hz" type="number" min="1" step="100" value="{DEFAULT_CONFIG.frequency_hz}">
+              </label>
+            </div>
             <button class="run-button" id="run-button">Run PWG LCR</button>
             <div class="status-grid">
               <div class="metric"><span>Samples</span><strong id="sample-count">{sample_count}</strong></div>
@@ -386,7 +478,12 @@ def render_app() -> str:
       runButton.disabled = true;
       logBox.textContent = 'Running QSPICE and QUX export...';
       try {{
-        const response = await fetch('/api/run-pwg-lcr', {{ method: 'POST' }});
+        const config = readConfig();
+        const response = await fetch('/api/run-pwg-lcr', {{
+          method: 'POST',
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify(config)
+        }});
         const payload = await response.json();
         if (!payload.ok) {{
           throw new Error(payload.error || 'Workflow failed');
@@ -396,6 +493,9 @@ def render_app() -> str:
           '/reports/pwg_lcr_comparison.html?ts=' + Date.now();
         logBox.textContent =
           'PWG LCR workflow complete\\n' +
+          'Amplitude Vp: ' + payload.config.amplitudeV + ' V\\n' +
+          'Bias: ' + payload.config.biasV + ' V\\n' +
+          'Frequency: ' + payload.config.frequencyHz + ' Hz\\n' +
           'QSPICE exit code: ' + payload.qspiceExitCode + '\\n' +
           'CSV export exit code: ' + payload.csvExportExitCode;
       }} catch (error) {{
@@ -404,6 +504,14 @@ def render_app() -> str:
         runButton.disabled = false;
       }}
     }});
+
+    function readConfig() {{
+      return {{
+        amplitudeV: Number(document.getElementById('amplitude-v').value),
+        biasV: Number(document.getElementById('bias-v').value),
+        frequencyHz: Number(document.getElementById('frequency-hz').value)
+      }};
+    }}
 
     function updateStatus(status) {{
       document.getElementById('workflow-state').textContent = 'Ready';

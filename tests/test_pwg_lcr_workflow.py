@@ -7,6 +7,7 @@ from src.qspice_tools.pwg_lcr_workflow import (
     discover_qux_exe,
     run_pwg_lcr_workflow,
 )
+from src.qspice_tools.pwg_generator import PwgConfig
 
 
 class PwgLcrWorkflowTest(unittest.TestCase):
@@ -69,6 +70,33 @@ class PwgLcrWorkflowTest(unittest.TestCase):
             available.write_text("", encoding="utf-8")
 
             self.assertEqual(discover_qspice_exe((missing, available)), available)
+
+    def test_uses_custom_pwg_config_for_generated_input(self):
+        with TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            case_dir = workspace / "case"
+            reports_dir = workspace / "reports"
+            case_dir.mkdir()
+            (case_dir / "pwg_lcr.cir").write_text("* test circuit\n.end\n", encoding="utf-8")
+
+            result = run_pwg_lcr_workflow(
+                case_dir=case_dir,
+                reports_dir=reports_dir,
+                pwg_config=PwgConfig(
+                    waveform="Sinusoidal",
+                    amplitude_v=6.0,
+                    bias_v=1.0,
+                    frequency_hz=5_000.0,
+                    cycles=1,
+                    samples_per_cycle=4,
+                ),
+            )
+
+            lines = result.pwl_path.read_text(encoding="utf-8").splitlines()
+
+        self.assertEqual(lines[0], "0 1")
+        self.assertEqual(lines[1], "5e-05 7")
+        self.assertEqual(lines[-1], "0.0002 1")
 
     def test_detects_first_available_qux_executable(self):
         with TemporaryDirectory() as temp_dir:
