@@ -162,16 +162,6 @@ def render_pwg_comparison_report(data: QspiceCsvData) -> str:
   </header>
   <main>
     <section>
-      <h2>Comparison Metrics</h2>
-      <div class="body metrics">
-        <div class="metric"><span>Input Peak-to-Peak</span><strong>{_format_number(_peak_to_peak(vin))} V</strong></div>
-        <div class="metric"><span>Output Peak-to-Peak</span><strong>{_format_number(_peak_to_peak(vout))} V</strong></div>
-        <div class="metric"><span>Peak Gain</span><strong>{_format_number(peak_gain)}</strong></div>
-        <div class="metric"><span>RMS Gain</span><strong>{_format_number(rms_gain)}</strong></div>
-      </div>
-    </section>
-
-    <section>
       <h2>Overlay Waveform</h2>
       <div class="body">
         {_render_overlay_chart(times, vin, vout)}
@@ -179,6 +169,16 @@ def render_pwg_comparison_report(data: QspiceCsvData) -> str:
           <span><span class="swatch" style="background:#2563eb"></span>V(in)</span>
           <span><span class="swatch" style="background:#0f766e"></span>V(out)</span>
         </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Comparison Metrics</h2>
+      <div class="body metrics">
+        <div class="metric"><span>Input Peak-to-Peak</span><strong>{_format_number(_peak_to_peak(vin))} V</strong></div>
+        <div class="metric"><span>Output Peak-to-Peak</span><strong>{_format_number(_peak_to_peak(vout))} V</strong></div>
+        <div class="metric"><span>Peak Gain</span><strong>{_format_number(peak_gain)}</strong></div>
+        <div class="metric"><span>RMS Gain</span><strong>{_format_number(rms_gain)}</strong></div>
       </div>
     </section>
 

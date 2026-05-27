@@ -298,9 +298,17 @@ def render_app() -> str:
       font-size: 12px;
       line-height: 1.45;
     }}
+    iframe {{
+      width: 100%;
+      height: 560px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+    }}
     @media (max-width: 900px) {{
       header, .layout {{ display: block; }}
       .trace-grid, .links {{ grid-template-columns: 1fr; }}
+      iframe {{ height: 460px; }}
     }}
   </style>
 </head>
@@ -359,6 +367,13 @@ def render_app() -> str:
             <a class="button" href="/reports/pwg_display_panel_spec.html" target="_blank">Display Panel Spec</a>
           </div>
         </section>
+
+        <section>
+          <h2>Waveform</h2>
+          <div class="body">
+            <iframe id="waveform-frame" src="/reports/pwg_lcr_comparison.html" title="PWG input and QSPICE output waveform"></iframe>
+          </div>
+        </section>
       </div>
     </div>
   </main>
@@ -377,6 +392,8 @@ def render_app() -> str:
           throw new Error(payload.error || 'Workflow failed');
         }}
         updateStatus(payload.status);
+        document.getElementById('waveform-frame').src =
+          '/reports/pwg_lcr_comparison.html?ts=' + Date.now();
         logBox.textContent =
           'PWG LCR workflow complete\\n' +
           'QSPICE exit code: ' + payload.qspiceExitCode + '\\n' +
