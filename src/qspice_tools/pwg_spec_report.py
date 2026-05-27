@@ -40,6 +40,20 @@ def render_pwg_spec_report() -> str:
       border-bottom: 1px solid var(--line);
       padding: 18px 28px;
       text-align: center;
+      position: relative;
+    }
+    .back-link {
+      position: absolute;
+      left: 22px;
+      top: 18px;
+      color: #ffffff;
+      background: #0f766e;
+      border-radius: 7px;
+      padding: 8px 11px;
+      text-decoration: none;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
     }
     h1 {
       color: var(--blue);
@@ -187,11 +201,17 @@ def render_pwg_spec_report() -> str:
       }
       h1 { font-size: 28px; }
       .box { min-height: auto; }
+      .back-link {
+        position: static;
+        display: inline-block;
+        margin-bottom: 12px;
+      }
     }
   </style>
 </head>
 <body>
   <header>
+    <a class="back-link" href="/">Back to App</a>
     <h1>A Simulation Example for Testing of Open-CtrLab &amp; Qspice [2024-05-13]</h1>
   </header>
   <main>
