@@ -16,6 +16,7 @@ class LocalAppTest(unittest.TestCase):
             [channel["config"].waveform for channel in channels],
             ["Sinusoidal", "Square", "Triangle", "Sawtooth"],
         )
+        self.assertEqual([channel["config"].duty_percent for channel in channels], [50.0] * 4)
 
     def test_uses_first_enabled_channel_for_qspice_input(self):
         channels = _channels_from_payload(
@@ -34,6 +35,7 @@ class LocalAppTest(unittest.TestCase):
                         "amplitudeV": 5,
                         "biasV": 1,
                         "frequencyHz": 2_000,
+                        "dutyPercent": 35,
                     },
                 ]
             }
@@ -46,6 +48,7 @@ class LocalAppTest(unittest.TestCase):
         self.assertEqual(config.amplitude_v, 5)
         self.assertEqual(config.bias_v, 1)
         self.assertEqual(config.frequency_hz, 2_000)
+        self.assertEqual(config.duty_percent, 35)
 
     def test_rejects_all_disabled_channels(self):
         channels = _channels_from_payload(

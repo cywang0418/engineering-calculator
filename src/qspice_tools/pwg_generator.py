@@ -17,6 +17,7 @@ class PwgConfig:
     frequency_hz: float
     cycles: int
     samples_per_cycle: int
+    duty_percent: float = 50.0
 
     @classmethod
     def default(cls) -> "PwgConfig":
@@ -27,6 +28,7 @@ class PwgConfig:
             frequency_hz=10_000.0,
             cycles=5,
             samples_per_cycle=200,
+            duty_percent=50.0,
         )
 
     @property
@@ -57,6 +59,8 @@ def generate_pwl(config: PwgConfig) -> list[tuple[float, float]]:
         raise ValueError("cycles must be greater than zero")
     if config.samples_per_cycle <= 0:
         raise ValueError("samples_per_cycle must be greater than zero")
+    if not 0.0 < config.duty_percent < 100.0:
+        raise ValueError("duty_percent must be greater than zero and less than 100")
 
     step_s = config.period_s / config.samples_per_cycle
     samples: list[tuple[float, float]] = []
@@ -67,18 +71,18 @@ def generate_pwl(config: PwgConfig) -> list[tuple[float, float]]:
             unit_value = math.sin(2.0 * math.pi * config.frequency_hz * time_s)
         else:
             phase = (time_s * config.frequency_hz) % 1.0
-            unit_value = _unit_waveform_value(config.waveform, phase)
+            unit_value = _unit_waveform_value(config.waveform, phase, config.duty_percent)
         voltage_v = config.bias_v + config.amplitude_v * unit_value
         samples.append((_clean_number(time_s), _clean_number(voltage_v)))
 
     return samples
 
 
-def _unit_waveform_value(waveform: str, phase: float) -> float:
+def _unit_waveform_value(waveform: str, phase: float, duty_percent: float = 50.0) -> float:
     if waveform == "Sinusoidal":
         return math.sin(2.0 * math.pi * phase)
     if waveform == "Square":
-        return 1.0 if phase < 0.5 else -1.0
+        return 1.0 if phase < duty_percent / 100.0 else -1.0
     if waveform == "Triangle":
         if phase < 0.25:
             return 4.0 * phase

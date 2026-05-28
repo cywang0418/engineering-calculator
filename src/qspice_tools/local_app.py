@@ -167,6 +167,7 @@ def _default_channels() -> list[dict]:
                 frequency_hz=DEFAULT_CONFIG.frequency_hz,
                 cycles=DEFAULT_CONFIG.cycles,
                 samples_per_cycle=DEFAULT_CONFIG.samples_per_cycle,
+                duty_percent=DEFAULT_CONFIG.duty_percent,
             ),
         }
         for index in range(CHANNEL_COUNT)
@@ -181,6 +182,7 @@ def _pwg_config_from_payload(payload: dict) -> PwgConfig:
         frequency_hz=_positive_float(payload.get("frequencyHz"), "frequencyHz"),
         cycles=DEFAULT_CONFIG.cycles,
         samples_per_cycle=DEFAULT_CONFIG.samples_per_cycle,
+        duty_percent=_duty_percent(payload.get("dutyPercent")),
     )
 
 
@@ -196,6 +198,7 @@ def _channels_from_payload(payload: dict) -> list[dict]:
         channel_payload.setdefault("amplitudeV", DEFAULT_CONFIG.amplitude_v)
         channel_payload.setdefault("biasV", DEFAULT_CONFIG.bias_v)
         channel_payload.setdefault("frequencyHz", DEFAULT_CONFIG.frequency_hz)
+        channel_payload.setdefault("dutyPercent", DEFAULT_CONFIG.duty_percent)
         channels.append(
             {
                 "enabled": bool(channel_payload.get("enabled", True)),
@@ -236,11 +239,19 @@ def _positive_float(value, name: str) -> float:
     return number
 
 
+def _duty_percent(value) -> float:
+    number = _float(value, "dutyPercent")
+    if not 0.0 < number < 100.0:
+        raise ValueError("dutyPercent must be greater than zero and less than 100")
+    return number
+
+
 def _payload_name_to_config_attr(name: str) -> str:
     return {
         "amplitudeV": "amplitude_v",
         "biasV": "bias_v",
         "frequencyHz": "frequency_hz",
+        "dutyPercent": "duty_percent",
     }[name]
 
 
@@ -260,6 +271,7 @@ def _config_payload(config: PwgConfig) -> dict:
         "frequencyHz": config.frequency_hz,
         "cycles": config.cycles,
         "samplesPerCycle": config.samples_per_cycle,
+        "dutyPercent": config.duty_percent,
     }
 
 
@@ -721,6 +733,7 @@ def render_app() -> str:
           'Amplitude Vp: ' + payload.config.amplitudeV + ' V\\n' +
           'Bias: ' + payload.config.biasV + ' V\\n' +
           'Frequency: ' + payload.config.frequencyHz + ' Hz\\n' +
+          'Duty: ' + payload.config.dutyPercent + ' %\\n' +
           'QSPICE exit code: ' + payload.qspiceExitCode + '\\n' +
           'CSV export exit code: ' + payload.csvExportExitCode;
       }} catch (error) {{
@@ -744,7 +757,8 @@ def render_app() -> str:
           waveform: channel.querySelector('.channel-waveform').value,
           amplitudeV: Number(channel.querySelector('.channel-amplitude').value),
           biasV: Number(channel.querySelector('.channel-bias').value),
-          frequencyHz: Number(channel.querySelector('.channel-frequency').value)
+          frequencyHz: Number(channel.querySelector('.channel-frequency').value),
+          dutyPercent: Number(channel.querySelector('.channel-duty').value)
         }}))
       }};
     }}
@@ -816,7 +830,7 @@ def render_app() -> str:
       context.strokeStyle = traceColors[index % traceColors.length];
       for (let pixel = 0; pixel <= width; pixel += 2) {{
         const phase = (pixel / width * 3) % 1;
-        const unit = waveformUnit(channel.waveform, phase);
+        const unit = waveformUnit(channel.waveform, phase, channel.dutyPercent);
         const y = yCenter - (channel.biasV + channel.amplitudeV * unit) * yScale;
         if (pixel === 0) context.moveTo(pixel, y);
         else context.lineTo(pixel, y);
@@ -824,11 +838,12 @@ def render_app() -> str:
       context.stroke();
       context.fillStyle = traceColors[index % traceColors.length];
       context.font = '12px Arial';
-      context.fillText('CH' + (index + 1) + ' ' + channel.waveform, 10, yCenter - 22);
+      const dutyLabel = channel.waveform === 'Square' ? ' ' + channel.dutyPercent + '%' : '';
+      context.fillText('CH' + (index + 1) + ' ' + channel.waveform + dutyLabel, 10, yCenter - 22);
     }}
 
-    function waveformUnit(waveform, phase) {{
-      if (waveform === 'Square') return phase < 0.5 ? 1 : -1;
+    function waveformUnit(waveform, phase, dutyPercent) {{
+      if (waveform === 'Square') return phase < dutyPercent / 100 ? 1 : -1;
       if (waveform === 'Triangle') {{
         if (phase < 0.25) return 4 * phase;
         if (phase < 0.75) return 2 - 4 * phase;
@@ -893,6 +908,9 @@ def _render_channel_control(index: int, channel: dict) -> str:
                   </label>
                   <label>Frequency Hz
                     <input class="channel-frequency" type="number" min="1" step="100" value="{config.frequency_hz}">
+                  </label>
+                  <label>Duty % (Square)
+                    <input class="channel-duty" type="number" min="1" max="99" step="1" value="{config.duty_percent}">
                   </label>
                 </div>
               </div>"""

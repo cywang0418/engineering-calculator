@@ -21,6 +21,7 @@ class PwgGeneratorTest(unittest.TestCase):
         self.assertEqual(config.frequency_hz, 10_000.0)
         self.assertEqual(config.cycles, 5)
         self.assertEqual(config.samples_per_cycle, 200)
+        self.assertEqual(config.duty_percent, 50.0)
 
     def test_generates_sine_pwl_samples_for_qspice(self):
         config = PwgConfig.default()
@@ -58,6 +59,21 @@ class PwgGeneratorTest(unittest.TestCase):
                     )
                 )
                 self.assertEqual([value for _, value in samples], values)
+
+    def test_generates_square_wave_with_adjustable_duty(self):
+        samples = generate_pwl(
+            PwgConfig(
+                waveform="Square",
+                amplitude_v=1.0,
+                bias_v=0.0,
+                frequency_hz=1.0,
+                cycles=1,
+                samples_per_cycle=4,
+                duty_percent=25.0,
+            )
+        )
+
+        self.assertEqual([value for _, value in samples], [1.0, -1.0, -1.0, -1.0, 1.0])
 
     def test_writes_qspice_pwl_file(self):
         samples = generate_sine_pwl(PwgConfig.default())

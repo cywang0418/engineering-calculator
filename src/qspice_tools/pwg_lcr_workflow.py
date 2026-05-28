@@ -230,6 +230,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--amplitude-v", type=float, default=PwgConfig.default().amplitude_v)
     parser.add_argument("--bias-v", type=float, default=PwgConfig.default().bias_v)
     parser.add_argument("--frequency-hz", type=float, default=PwgConfig.default().frequency_hz)
+    parser.add_argument("--duty-percent", type=float, default=PwgConfig.default().duty_percent)
     parser.add_argument(
         "--run-qspice",
         action="store_true",
@@ -255,6 +256,7 @@ def main(argv: list[str]) -> int:
             frequency_hz=args.frequency_hz,
             cycles=PwgConfig.default().cycles,
             samples_per_cycle=PwgConfig.default().samples_per_cycle,
+            duty_percent=args.duty_percent,
         ),
         run_qspice=args.run_qspice,
         csv_export_command=args.csv_export_command,
