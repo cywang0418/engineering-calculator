@@ -286,16 +286,19 @@ def render_app() -> str:
   <title>QSPICE Engineering Calculator</title>
   <style>
     :root {{
-      --page: #eef3f8;
-      --panel: #ffffff;
-      --ink: #172033;
-      --muted: #5f6c7b;
-      --line: #d2dbe8;
-      --accent: #0f766e;
-      --accent-dark: #0b5f59;
-      --blue: #1d4ed8;
-      --warn: #a15c07;
-      --code: #101827;
+      --page: #d9f5f7;
+      --panel: #e9ffff;
+      --panel-strong: #d7f7fa;
+      --ink: #102535;
+      --muted: #4e6d75;
+      --line: #8ab5bd;
+      --dark: #202728;
+      --grid: #7e999b;
+      --green: #1fd35f;
+      --cyan: #0aa6d8;
+      --amber: #f2b705;
+      --red: #df1f2f;
+      --blue: #1a68b5;
     }}
     * {{ box-sizing: border-box; }}
     body {{
@@ -304,83 +307,170 @@ def render_app() -> str:
       color: var(--ink);
       font-family: Arial, Helvetica, sans-serif;
     }}
-    header {{
-      background: #172033;
-      color: #fff;
-      padding: 18px 24px;
-      display: flex;
-      justify-content: space-between;
-      gap: 18px;
-      align-items: center;
-    }}
-    h1 {{
-      margin: 0 0 5px;
-      font-size: 24px;
-      letter-spacing: 0;
-    }}
-    header p {{
-      margin: 0;
-      color: #cbd5e1;
-      font-size: 13px;
-    }}
     main {{
-      max-width: 1220px;
+      max-width: 1460px;
       margin: 0 auto;
-      padding: 18px;
+      padding: 10px 12px 18px;
     }}
-    .layout {{
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      gap: 16px;
-      align-items: start;
-    }}
-    section, .metric, .trace {{
+    .instrument {{
+      border: 2px solid #28515b;
       background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
+      box-shadow: 0 14px 34px rgba(29, 77, 87, 0.24);
     }}
-    section {{
-      margin-bottom: 16px;
-      overflow: hidden;
+    .topbar {{
+      display: grid;
+      grid-template-columns: 320px 1fr 260px;
+      gap: 18px;
+      padding: 16px 18px;
+      border-bottom: 2px solid #28515b;
+      background: linear-gradient(#f0ffff, #daf8fb);
     }}
-    h2 {{
+    .brand h1 {{
       margin: 0;
-      padding: 13px 15px;
-      border-bottom: 1px solid var(--line);
-      font-size: 16px;
+      color: #0086d8;
+      font-size: 48px;
+      line-height: 0.9;
       letter-spacing: 0;
     }}
-    .body {{ padding: 15px; }}
-    .run-button {{
-      width: 100%;
-      border: 0;
-      border-radius: 7px;
-      background: var(--accent);
+    .brand span {{
+      color: #14528b;
+      font-size: 20px;
+      font-weight: 700;
+    }}
+    .brand p, .status-line, .path, .small {{
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }}
+    .device-strip {{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      align-content: center;
+    }}
+    .meter {{
+      border: 1px solid var(--line);
+      background: #f6ffff;
+      padding: 9px;
+      min-height: 58px;
+    }}
+    .meter span {{
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }}
+    .meter strong {{
+      display: block;
+      margin-top: 8px;
+      font-size: 18px;
+      font-variant-numeric: tabular-nums;
+    }}
+    .run-stack {{
+      display: grid;
+      gap: 9px;
+      align-content: center;
+    }}
+    .run-button, a.button {{
+      border: 1px solid #0f4450;
+      border-radius: 3px;
       color: #fff;
-      padding: 12px 14px;
-      font-size: 15px;
+      text-align: center;
+      text-decoration: none;
+      letter-spacing: 0;
       font-weight: 700;
       cursor: pointer;
-      margin-bottom: 12px;
     }}
-    .run-button:hover {{ background: var(--accent-dark); }}
-    .run-button:disabled {{ background: #90a4b8; cursor: wait; }}
-    .form-grid {{
+    .run-button {{
+      width: 100%;
+      background: #11866f;
+      padding: 12px;
+      font-size: 15px;
+    }}
+    .run-button:hover {{ background: #0d6f5c; }}
+    .run-button:disabled {{ background: #8fa6a8; cursor: wait; }}
+    .stop-button {{
+      background: var(--red);
+      padding: 9px;
+      font-size: 13px;
+    }}
+    .panel-layout {{
       display: grid;
+      grid-template-columns: minmax(440px, 1.25fr) minmax(420px, 1fr);
+      gap: 12px;
+      padding: 12px;
+    }}
+    .panel {{
+      border: 1px solid var(--line);
+      background: #efffff;
+    }}
+    .panel-title {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-strong);
+      font-size: 14px;
+      font-weight: 700;
+    }}
+    .panel-body {{ padding: 12px; }}
+    .scope {{
+      background: #1e2323;
+      border: 2px solid #566869;
+      min-height: 360px;
+      position: relative;
+    }}
+    .scope::before {{
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(170, 220, 220, 0.55) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(170, 220, 220, 0.55) 1px, transparent 1px),
+        linear-gradient(to right, rgba(170, 220, 220, 0.18) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(170, 220, 220, 0.18) 1px, transparent 1px);
+      background-size: 10% 20%, 10% 20%, 2% 4%, 2% 4%;
+    }}
+    #preview-canvas {{
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }}
+    .scope-readout {{
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
-      margin-bottom: 12px;
+      margin-top: 10px;
+    }}
+    .readout-cell {{
+      border: 1px solid var(--line);
+      background: #f8ffff;
+      padding: 8px;
+      font-size: 12px;
+    }}
+    .readout-cell strong {{
+      display: block;
+      margin-top: 5px;
+      font-size: 15px;
+      font-variant-numeric: tabular-nums;
     }}
     .channel-grid {{
       display: grid;
-      gap: 11px;
-      margin-bottom: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
     }}
     .channel {{
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px;
+      border-left: 5px solid var(--cyan);
+      padding: 9px;
       background: #fbfcfe;
     }}
+    .channel[data-channel="2"] {{ border-left-color: var(--green); }}
+    .channel[data-channel="3"] {{ border-left-color: var(--amber); }}
+    .channel[data-channel="4"] {{ border-left-color: var(--red); }}
     .channel-head {{
       display: flex;
       justify-content: space-between;
@@ -400,6 +490,11 @@ def render_app() -> str:
       width: auto;
       padding: 0;
     }}
+    .form-grid {{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }}
     label {{
       display: grid;
       gap: 5px;
@@ -410,60 +505,51 @@ def render_app() -> str:
     input {{
       width: 100%;
       border: 1px solid var(--line);
-      border-radius: 7px;
-      padding: 9px 10px;
+      border-radius: 2px;
+      padding: 7px 8px;
       color: var(--ink);
-      font-size: 14px;
+      font-size: 13px;
       font-variant-numeric: tabular-nums;
+      background: #f7ffff;
     }}
     select {{
       width: 100%;
       border: 1px solid var(--line);
-      border-radius: 7px;
-      padding: 9px 10px;
+      border-radius: 2px;
+      padding: 7px 8px;
       color: var(--ink);
-      font-size: 14px;
-      background: #fff;
+      font-size: 13px;
+      background: #f7ffff;
     }}
-    .status-grid {{
+    .bottom-layout {{
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-top: 12px;
-    }}
-    .metric {{
-      padding: 11px;
-      min-height: 70px;
-    }}
-    .metric span, .trace dt, .small {{
-      color: var(--muted);
-      font-size: 12px;
-    }}
-    .metric strong {{
-      display: block;
-      margin-top: 7px;
-      font-size: 18px;
-      font-variant-numeric: tabular-nums;
+      padding: 0 12px 12px;
     }}
     .trace-grid {{
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      gap: 8px;
     }}
     .trace {{
-      padding: 12px;
-      background: #fbfcfe;
+      border: 1px solid var(--line);
+      background: #f8ffff;
+      padding: 9px;
     }}
     .trace h3 {{
-      margin: 0 0 10px;
-      font-size: 15px;
+      margin: 0 0 8px;
+      font-size: 14px;
     }}
     dl {{
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 7px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
       margin: 0;
-      font-size: 13px;
+      font-size: 12px;
+    }}
+    dt {{
+      color: var(--muted);
     }}
     dd {{
       margin: 0;
@@ -473,24 +559,20 @@ def render_app() -> str:
     .links {{
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
+      gap: 8px;
+      margin-top: 10px;
     }}
     a.button {{
-      display: block;
-      text-align: center;
-      color: #fff;
       background: var(--blue);
-      text-decoration: none;
-      padding: 10px;
-      border-radius: 7px;
-      font-weight: 700;
+      padding: 9px;
       font-size: 13px;
     }}
     pre {{
       margin: 0;
-      background: var(--code);
+      background: #f7ffff;
+      border: 1px solid var(--line);
       color: #e5edf7;
-      border-radius: 7px;
+      color: var(--ink);
       padding: 12px;
       white-space: pre-wrap;
       min-height: 112px;
@@ -505,90 +587,115 @@ def render_app() -> str:
     }}
     iframe {{
       width: 100%;
-      height: 560px;
+      height: 360px;
       border: 1px solid var(--line);
-      border-radius: 7px;
       background: #fff;
     }}
-    @media (max-width: 900px) {{
-      header, .layout {{ display: block; }}
-      .trace-grid, .links {{ grid-template-columns: 1fr; }}
-      iframe {{ height: 460px; }}
+    @media (max-width: 940px) {{
+      .panel-layout, .bottom-layout {{ grid-template-columns: 1fr; }}
+    }}
+    @media (max-width: 860px) {{
+      .topbar {{ grid-template-columns: 1fr; }}
+      .brand h1 {{ font-size: 38px; }}
+    }}
+    @media (max-width: 720px) {{
+      .channel-grid, .form-grid, .scope-readout, .trace-grid, .links, .device-strip {{
+        grid-template-columns: 1fr;
+      }}
+      .scope {{ min-height: 320px; }}
     }}
   </style>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>QSPICE Engineering Calculator</h1>
-      <p>Multi-channel function generator, local QSPICE simulation, QUX CSV export, and waveform reports.</p>
-    </div>
-    <div class="small">Workflow: <strong id="workflow-state">{workflow_state}</strong></div>
-  </header>
   <main>
-    <div class="layout">
-      <aside>
-        <section>
-          <h2>Run</h2>
-          <div class="body">
+    <div class="instrument">
+      <div class="topbar">
+        <div class="brand">
+          <h1>QGEN</h1>
+          <span>QSPICE Function Generator</span>
+          <p>4-channel arbitrary source control with local and remote QSPICE execution.</p>
+        </div>
+        <div class="device-strip">
+          <div class="meter"><span>Workflow</span><strong id="workflow-state">{workflow_state}</strong></div>
+          <div class="meter"><span>Samples</span><strong id="sample-count">{sample_count}</strong></div>
+          <div class="meter"><span>QRAW</span><strong id="qraw-state">{_yes_no(status["qrawExists"])}</strong></div>
+          <div class="meter"><span>CSV</span><strong id="csv-state">{_yes_no(status["csvExists"])}</strong></div>
+        </div>
+        <div class="run-stack">
             <button class="run-button" id="run-button">Run Active Channel</button>
+          <a class="button stop-button" href="/">Reset Panel</a>
+          <div class="status-line">Active input: first enabled channel</div>
+        </div>
+      </div>
+
+      <div class="panel-layout">
+        <section class="panel">
+          <div class="panel-title">
+            <span>Oscilloscope Preview</span>
+            <span>Time: <span id="time-range">{time_range}</span></span>
+          </div>
+          <div class="panel-body">
+            <div class="scope"><canvas id="preview-canvas"></canvas></div>
+            <div class="scope-readout">
+              <div class="readout-cell">Trace Count<strong id="trace-count">{len(status["traces"])}</strong></div>
+              <div class="readout-cell">CH0 Frequency<strong id="freq-readout">10 kHz</strong></div>
+              <div class="readout-cell">CH0 Vpp<strong id="vpp-readout">24 V</strong></div>
+              <div class="readout-cell">Mode<strong>Simulation</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span>Function Generator Channels</span>
+            <span>AO 0 / AO 1 / AO 2 / AO 3</span>
+          </div>
+          <div class="panel-body">
             <div class="channel-grid" id="channel-grid">
 {_render_channel_controls()}
             </div>
-            <div class="status-grid">
-              <div class="metric"><span>Samples</span><strong id="sample-count">{sample_count}</strong></div>
-              <div class="metric"><span>Traces</span><strong id="trace-count">{len(status["traces"])}</strong></div>
-              <div class="metric"><span>QRAW</span><strong id="qraw-state">{_yes_no(status["qrawExists"])}</strong></div>
-              <div class="metric"><span>CSV</span><strong id="csv-state">{_yes_no(status["csvExists"])}</strong></div>
-            </div>
           </div>
         </section>
+      </div>
 
-        <section>
-          <h2>Case</h2>
-          <div class="body">
-            <p class="path">Circuit: {CASE_DIR / "pwg_lcr.cir"}</p>
-            <p class="path">CSV: {CSV_PATH}</p>
-            <p class="path">Time: <span id="time-range">{time_range}</span></p>
-          </div>
-        </section>
-
-        <section>
-          <h2>Log</h2>
-          <div class="body"><pre id="log">Ready.</pre></div>
-        </section>
-      </aside>
-
-      <div>
-        <section>
-          <h2>Trace Summary</h2>
-          <div class="body trace-grid" id="trace-grid">
+      <div class="bottom-layout">
+        <section class="panel">
+          <div class="panel-title"><span>QSPICE Trace Summary</span><span>Generated Results</span></div>
+          <div class="panel-body trace-grid" id="trace-grid">
 {cards}
           </div>
         </section>
 
-        <section>
-          <h2>Reports</h2>
-          <div class="body links">
+        <section class="panel">
+          <div class="panel-title"><span>Run Log and Reports</span><span>Local Case</span></div>
+          <div class="panel-body">
+            <pre id="log">Ready.</pre>
+            <p class="path">Circuit: {CASE_DIR / "pwg_lcr.cir"}</p>
+            <p class="path">CSV: {CSV_PATH}</p>
+            <div class="links">
             <a class="button" href="/reports/pwg_lcr_comparison.html" target="_blank">Input Output Comparison</a>
             <a class="button" href="/reports/pwg_lcr_report.html" target="_blank">Waveform Report</a>
             <a class="button" href="/reports/pwg_display_panel_spec.html" target="_blank">Display Panel Spec</a>
-          </div>
-        </section>
-
-        <section>
-          <h2>Waveform</h2>
-          <div class="body">
-            <iframe id="waveform-frame" src="/reports/pwg_lcr_comparison.html" title="PWG input and QSPICE output waveform"></iframe>
+            </div>
           </div>
         </section>
       </div>
+
+      <section class="panel" style="margin: 0 12px 12px;">
+          <div class="panel-title"><span>QSPICE Waveform Report</span><span>Browser Preview</span></div>
+          <div class="panel-body">
+            <iframe id="waveform-frame" src="/reports/pwg_lcr_comparison.html" title="PWG input and QSPICE output waveform"></iframe>
+          </div>
+      </section>
     </div>
   </main>
 
   <script>
     const runButton = document.getElementById('run-button');
     const logBox = document.getElementById('log');
+    const canvas = document.getElementById('preview-canvas');
+    const context = canvas.getContext('2d');
+    const traceColors = ['#21d4ff', '#39ff72', '#ffd43b', '#ff4d5f'];
 
     runButton.addEventListener('click', async () => {{
       runButton.disabled = true;
@@ -620,8 +727,15 @@ def render_app() -> str:
         logBox.textContent = String(error);
       }} finally {{
         runButton.disabled = false;
+        drawPreview();
       }}
     }});
+
+    document.querySelectorAll('.channel input, .channel select').forEach((control) => {{
+      control.addEventListener('input', drawPreview);
+      control.addEventListener('change', drawPreview);
+    }});
+    window.addEventListener('resize', drawPreview);
 
     function readConfig() {{
       return {{
@@ -643,6 +757,11 @@ def render_app() -> str:
       document.getElementById('csv-state').textContent = status.csvExists ? 'Yes' : 'No';
       document.getElementById('time-range').textContent =
         formatNumber(status.timeStart) + ' s to ' + formatNumber(status.timeEnd) + ' s';
+      const firstEnabled = status.channels.find((channel) => channel.enabled) || status.channels[0];
+      if (firstEnabled) {{
+        document.getElementById('freq-readout').textContent = formatEngineering(firstEnabled.frequencyHz) + 'Hz';
+        document.getElementById('vpp-readout').textContent = formatNumber(firstEnabled.amplitudeV * 2) + ' V';
+      }}
       const grid = document.getElementById('trace-grid');
       grid.innerHTML = status.traces.map((trace) => renderTrace(trace, status.stats[trace])).join('');
     }}
@@ -661,11 +780,65 @@ def render_app() -> str:
       return Number(value).toPrecision(7).replace(/\\.0+$/, '');
     }}
 
+    function formatEngineering(value) {{
+      const number = Number(value);
+      if (number >= 1000) return formatNumber(number / 1000) + ' k';
+      return formatNumber(number) + ' ';
+    }}
+
     function escapeHtml(value) {{
       return value.replace(/[&<>"']/g, (char) => ({{
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
       }}[char]));
     }}
+
+    function drawPreview() {{
+      const rect = canvas.getBoundingClientRect();
+      const scale = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * scale));
+      canvas.height = Math.max(1, Math.floor(rect.height * scale));
+      context.setTransform(scale, 0, 0, scale, 0, 0);
+      context.clearRect(0, 0, rect.width, rect.height);
+      const channels = readConfig().channels;
+      const enabled = channels.filter((channel) => channel.enabled);
+      const maxAmplitude = Math.max(1, ...enabled.map((channel) => Math.abs(channel.amplitudeV) + Math.abs(channel.biasV)));
+      channels.forEach((channel, index) => {{
+        if (!channel.enabled) return;
+        drawWave(channel, index, rect.width, rect.height, maxAmplitude);
+      }});
+    }}
+
+    function drawWave(channel, index, width, height, maxAmplitude) {{
+      const yCenter = height * (0.2 + index * 0.2);
+      const yScale = height * 0.075 / maxAmplitude;
+      context.beginPath();
+      context.lineWidth = 2;
+      context.strokeStyle = traceColors[index % traceColors.length];
+      for (let pixel = 0; pixel <= width; pixel += 2) {{
+        const phase = (pixel / width * 3) % 1;
+        const unit = waveformUnit(channel.waveform, phase);
+        const y = yCenter - (channel.biasV + channel.amplitudeV * unit) * yScale;
+        if (pixel === 0) context.moveTo(pixel, y);
+        else context.lineTo(pixel, y);
+      }}
+      context.stroke();
+      context.fillStyle = traceColors[index % traceColors.length];
+      context.font = '12px Arial';
+      context.fillText('CH' + (index + 1) + ' ' + channel.waveform, 10, yCenter - 22);
+    }}
+
+    function waveformUnit(waveform, phase) {{
+      if (waveform === 'Square') return phase < 0.5 ? 1 : -1;
+      if (waveform === 'Triangle') {{
+        if (phase < 0.25) return 4 * phase;
+        if (phase < 0.75) return 2 - 4 * phase;
+        return -4 + 4 * phase;
+      }}
+      if (waveform === 'Sawtooth') return 2 * phase - 1;
+      return Math.sin(2 * Math.PI * phase);
+    }}
+
+    drawPreview();
   </script>
 </body>
 </html>
