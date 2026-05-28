@@ -4,6 +4,8 @@ from tempfile import TemporaryDirectory
 
 from src.qspice_tools.pwg_generator import (
     PwgConfig,
+    SUPPORTED_WAVEFORMS,
+    generate_pwl,
     generate_sine_pwl,
     write_pwl,
 )
@@ -32,6 +34,30 @@ class PwgGeneratorTest(unittest.TestCase):
         quarter_cycle_index = 50
         self.assertAlmostEqual(samples[quarter_cycle_index][0], 0.000025)
         self.assertAlmostEqual(samples[quarter_cycle_index][1], 12.0, places=9)
+
+    def test_generates_supported_waveforms(self):
+        expected = {
+            "Sinusoidal": [0.0, 1.0, 0.0, -1.0, 0.0],
+            "Square": [1.0, 1.0, -1.0, -1.0, 1.0],
+            "Triangle": [0.0, 1.0, 0.0, -1.0, 0.0],
+            "Sawtooth": [-1.0, -0.5, 0.0, 0.5, -1.0],
+        }
+
+        self.assertEqual(SUPPORTED_WAVEFORMS, tuple(expected))
+
+        for waveform, values in expected.items():
+            with self.subTest(waveform=waveform):
+                samples = generate_pwl(
+                    PwgConfig(
+                        waveform=waveform,
+                        amplitude_v=1.0,
+                        bias_v=0.0,
+                        frequency_hz=1.0,
+                        cycles=1,
+                        samples_per_cycle=4,
+                    )
+                )
+                self.assertEqual([value for _, value in samples], values)
 
     def test_writes_qspice_pwl_file(self):
         samples = generate_sine_pwl(PwgConfig.default())

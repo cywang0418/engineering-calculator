@@ -8,7 +8,7 @@ from pathlib import Path
 
 from src.qspice_tools.csv_reader import read_qspice_csv
 from src.qspice_tools.pwg_comparison_report import generate_pwg_comparison_report
-from src.qspice_tools.pwg_generator import PwgConfig, generate_sine_pwl, write_pwl
+from src.qspice_tools.pwg_generator import PwgConfig, SUPPORTED_WAVEFORMS, generate_pwl, write_pwl
 from src.qspice_tools.waveform_report import generate_waveform_report
 
 
@@ -61,7 +61,7 @@ def run_pwg_lcr_workflow(
         raise FileNotFoundError(f"Missing circuit file: {circuit_path}")
 
     config = pwg_config or PwgConfig.default()
-    samples = generate_sine_pwl(config)
+    samples = generate_pwl(config)
     write_pwl(samples, pwl_path)
 
     qspice_exit_code: int | None = None
@@ -226,6 +226,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--csv", type=Path, default=None, help="QSPICE-exported CSV file")
     parser.add_argument("--qspice-exe", type=Path, default=None, help="Path to QSPICE64.exe")
     parser.add_argument("--qux-exe", type=Path, default=None, help="Path to QUX.exe")
+    parser.add_argument("--waveform", choices=SUPPORTED_WAVEFORMS, default=PwgConfig.default().waveform)
     parser.add_argument("--amplitude-v", type=float, default=PwgConfig.default().amplitude_v)
     parser.add_argument("--bias-v", type=float, default=PwgConfig.default().bias_v)
     parser.add_argument("--frequency-hz", type=float, default=PwgConfig.default().frequency_hz)
@@ -248,7 +249,7 @@ def main(argv: list[str]) -> int:
         qspice_exe=args.qspice_exe,
         qux_exe=args.qux_exe,
         pwg_config=PwgConfig(
-            waveform="Sinusoidal",
+            waveform=args.waveform,
             amplitude_v=args.amplitude_v,
             bias_v=args.bias_v,
             frequency_hz=args.frequency_hz,

@@ -6,6 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+SUPPORTED_WAVEFORMS = ("Sinusoidal", "Square", "Triangle", "Sawtooth")
+
+
 @dataclass(frozen=True)
 class PwgConfig:
     waveform: str
@@ -42,6 +45,12 @@ class PwgConfig:
 def generate_sine_pwl(config: PwgConfig) -> list[tuple[float, float]]:
     if config.waveform != "Sinusoidal":
         raise ValueError(f"Unsupported waveform: {config.waveform}")
+    return generate_pwl(config)
+
+
+def generate_pwl(config: PwgConfig) -> list[tuple[float, float]]:
+    if config.waveform not in SUPPORTED_WAVEFORMS:
+        raise ValueError(f"Unsupported waveform: {config.waveform}")
     if config.frequency_hz <= 0:
         raise ValueError("frequency_hz must be greater than zero")
     if config.cycles <= 0:
@@ -54,12 +63,31 @@ def generate_sine_pwl(config: PwgConfig) -> list[tuple[float, float]]:
 
     for index in range(config.sample_count):
         time_s = index * step_s
-        voltage_v = config.bias_v + config.amplitude_v * math.sin(
-            2.0 * math.pi * config.frequency_hz * time_s
-        )
+        if config.waveform == "Sinusoidal":
+            unit_value = math.sin(2.0 * math.pi * config.frequency_hz * time_s)
+        else:
+            phase = (time_s * config.frequency_hz) % 1.0
+            unit_value = _unit_waveform_value(config.waveform, phase)
+        voltage_v = config.bias_v + config.amplitude_v * unit_value
         samples.append((_clean_number(time_s), _clean_number(voltage_v)))
 
     return samples
+
+
+def _unit_waveform_value(waveform: str, phase: float) -> float:
+    if waveform == "Sinusoidal":
+        return math.sin(2.0 * math.pi * phase)
+    if waveform == "Square":
+        return 1.0 if phase < 0.5 else -1.0
+    if waveform == "Triangle":
+        if phase < 0.25:
+            return 4.0 * phase
+        if phase < 0.75:
+            return 2.0 - 4.0 * phase
+        return -4.0 + 4.0 * phase
+    if waveform == "Sawtooth":
+        return 2.0 * phase - 1.0
+    raise ValueError(f"Unsupported waveform: {waveform}")
 
 
 def write_pwl(samples: list[tuple[float, float]], output_path: Path) -> None:
@@ -83,7 +111,7 @@ def main(argv: list[str]) -> int:
         print("Usage: python -m src.qspice_tools.pwg_generator <output.pwl>")
         return 2
 
-    samples = generate_sine_pwl(PwgConfig.default())
+    samples = generate_pwl(PwgConfig.default())
     write_pwl(samples, Path(argv[1]))
     print(f"wrote {argv[1]}")
     print("waveform: Sinusoidal")

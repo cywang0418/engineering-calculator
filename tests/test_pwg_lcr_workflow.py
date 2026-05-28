@@ -83,7 +83,7 @@ class PwgLcrWorkflowTest(unittest.TestCase):
                 case_dir=case_dir,
                 reports_dir=reports_dir,
                 pwg_config=PwgConfig(
-                    waveform="Sinusoidal",
+                    waveform="Triangle",
                     amplitude_v=6.0,
                     bias_v=1.0,
                     frequency_hz=5_000.0,

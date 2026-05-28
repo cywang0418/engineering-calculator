@@ -8,7 +8,12 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from src.qspice_tools.csv_reader import read_qspice_csv
-from src.qspice_tools.pwg_generator import PwgConfig
+from src.qspice_tools.pwg_generator import (
+    PwgConfig,
+    SUPPORTED_WAVEFORMS,
+    generate_pwl,
+    write_pwl,
+)
 from src.qspice_tools.pwg_lcr_workflow import run_pwg_lcr_workflow
 from src.qspice_tools.waveform_report import _format_number
 
@@ -18,6 +23,7 @@ CASE_DIR = PROJECT_ROOT / "qspice-cli-validation" / "examples" / "pwg-lcr"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 CSV_PATH = CASE_DIR / "pwg_lcr.csv"
 DEFAULT_CONFIG = PwgConfig.default()
+CHANNEL_COUNT = 4
 
 
 class QspiceAppHandler(BaseHTTPRequestHandler):
@@ -41,7 +47,10 @@ class QspiceAppHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            config = _pwg_config_from_payload(self._read_json())
+            payload = self._read_json()
+            channels = _channels_from_payload(payload)
+            active_index, config = _active_channel_config(channels)
+            _write_channel_pwl_files(channels)
             result = run_pwg_lcr_workflow(
                 case_dir=CASE_DIR,
                 reports_dir=REPORTS_DIR,
@@ -50,12 +59,16 @@ class QspiceAppHandler(BaseHTTPRequestHandler):
             )
             status = build_status()
             status["config"] = _config_payload(config)
+            status["channels"] = [_channel_payload(channel) for channel in channels]
+            status["activeChannel"] = active_index + 1
             self._send_json(
                 {
                     "ok": True,
                     "qspiceExitCode": result.qspice_exit_code,
                     "csvExportExitCode": result.csv_export_exit_code,
                     "config": _config_payload(config),
+                    "channels": [_channel_payload(channel) for channel in channels],
+                    "activeChannel": active_index + 1,
                     "status": status,
                 }
             )
@@ -120,6 +133,8 @@ def build_status() -> dict:
         "traces": [],
         "stats": {},
         "config": _config_payload(DEFAULT_CONFIG),
+        "channels": [_channel_payload(channel) for channel in _default_channels()],
+        "activeChannel": 1,
     }
     if not CSV_PATH.exists():
         return status
@@ -140,15 +155,69 @@ def build_status() -> dict:
     return status
 
 
+def _default_channels() -> list[dict]:
+    waveforms = ("Sinusoidal", "Square", "Triangle", "Sawtooth")
+    return [
+        {
+            "enabled": True,
+            "config": PwgConfig(
+                waveform=waveforms[index],
+                amplitude_v=DEFAULT_CONFIG.amplitude_v,
+                bias_v=DEFAULT_CONFIG.bias_v,
+                frequency_hz=DEFAULT_CONFIG.frequency_hz,
+                cycles=DEFAULT_CONFIG.cycles,
+                samples_per_cycle=DEFAULT_CONFIG.samples_per_cycle,
+            ),
+        }
+        for index in range(CHANNEL_COUNT)
+    ]
+
+
 def _pwg_config_from_payload(payload: dict) -> PwgConfig:
     return PwgConfig(
-        waveform="Sinusoidal",
+        waveform=_waveform(payload.get("waveform")),
         amplitude_v=_positive_float(payload.get("amplitudeV"), "amplitudeV"),
         bias_v=_float(payload.get("biasV"), "biasV"),
         frequency_hz=_positive_float(payload.get("frequencyHz"), "frequencyHz"),
         cycles=DEFAULT_CONFIG.cycles,
         samples_per_cycle=DEFAULT_CONFIG.samples_per_cycle,
     )
+
+
+def _channels_from_payload(payload: dict) -> list[dict]:
+    raw_channels = payload.get("channels")
+    if not raw_channels:
+        return [{"enabled": True, "config": _pwg_config_from_payload(payload)}]
+
+    channels = []
+    for index, raw_channel in enumerate(raw_channels[:CHANNEL_COUNT]):
+        channel_payload = dict(raw_channel or {})
+        channel_payload.setdefault("waveform", DEFAULT_CONFIG.waveform)
+        channel_payload.setdefault("amplitudeV", DEFAULT_CONFIG.amplitude_v)
+        channel_payload.setdefault("biasV", DEFAULT_CONFIG.bias_v)
+        channel_payload.setdefault("frequencyHz", DEFAULT_CONFIG.frequency_hz)
+        channels.append(
+            {
+                "enabled": bool(channel_payload.get("enabled", True)),
+                "config": _pwg_config_from_payload(channel_payload),
+            }
+        )
+    return channels
+
+
+def _active_channel_config(channels: list[dict]) -> tuple[int, PwgConfig]:
+    for index, channel in enumerate(channels):
+        if channel["enabled"]:
+            return index, channel["config"]
+    raise ValueError("At least one channel must be enabled")
+
+
+def _write_channel_pwl_files(channels: list[dict]) -> None:
+    for index, channel in enumerate(channels, start=1):
+        if not channel["enabled"]:
+            continue
+        path = CASE_DIR / f"pwg_ch{index}.pwl"
+        write_pwl(generate_pwl(channel["config"]), path)
 
 
 def _float(value, name: str) -> float:
@@ -175,14 +244,29 @@ def _payload_name_to_config_attr(name: str) -> str:
     }[name]
 
 
+def _waveform(value) -> str:
+    if value in (None, ""):
+        return DEFAULT_CONFIG.waveform
+    if value not in SUPPORTED_WAVEFORMS:
+        raise ValueError(f"waveform must be one of: {', '.join(SUPPORTED_WAVEFORMS)}")
+    return str(value)
+
+
 def _config_payload(config: PwgConfig) -> dict:
     return {
+        "waveform": config.waveform,
         "amplitudeV": config.amplitude_v,
         "biasV": config.bias_v,
         "frequencyHz": config.frequency_hz,
         "cycles": config.cycles,
         "samplesPerCycle": config.samples_per_cycle,
     }
+
+
+def _channel_payload(channel: dict) -> dict:
+    payload = _config_payload(channel["config"])
+    payload["enabled"] = channel["enabled"]
+    return payload
 
 
 def render_app() -> str:
@@ -277,6 +361,7 @@ def render_app() -> str:
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
+      margin-bottom: 12px;
     }}
     .run-button:hover {{ background: var(--accent-dark); }}
     .run-button:disabled {{ background: #90a4b8; cursor: wait; }}
@@ -284,6 +369,36 @@ def render_app() -> str:
       display: grid;
       gap: 10px;
       margin-bottom: 12px;
+    }}
+    .channel-grid {{
+      display: grid;
+      gap: 11px;
+      margin-bottom: 12px;
+    }}
+    .channel {{
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfcfe;
+    }}
+    .channel-head {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 700;
+    }}
+    .channel-head label {{
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+    }}
+    .channel-head input {{
+      width: auto;
+      padding: 0;
     }}
     label {{
       display: grid;
@@ -300,6 +415,15 @@ def render_app() -> str:
       color: var(--ink);
       font-size: 14px;
       font-variant-numeric: tabular-nums;
+    }}
+    select {{
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 9px 10px;
+      color: var(--ink);
+      font-size: 14px;
+      background: #fff;
     }}
     .status-grid {{
       display: grid;
@@ -397,7 +521,7 @@ def render_app() -> str:
   <header>
     <div>
       <h1>QSPICE Engineering Calculator</h1>
-      <p>PWG sine input, local QSPICE simulation, QUX CSV export, and waveform reports.</p>
+      <p>Multi-channel function generator, local QSPICE simulation, QUX CSV export, and waveform reports.</p>
     </div>
     <div class="small">Workflow: <strong id="workflow-state">{workflow_state}</strong></div>
   </header>
@@ -407,18 +531,10 @@ def render_app() -> str:
         <section>
           <h2>Run</h2>
           <div class="body">
-            <div class="form-grid">
-              <label>Amplitude Vp
-                <input id="amplitude-v" type="number" min="0.1" step="0.1" value="{DEFAULT_CONFIG.amplitude_v}">
-              </label>
-              <label>Bias Voltage
-                <input id="bias-v" type="number" step="0.1" value="{DEFAULT_CONFIG.bias_v}">
-              </label>
-              <label>Frequency Hz
-                <input id="frequency-hz" type="number" min="1" step="100" value="{DEFAULT_CONFIG.frequency_hz}">
-              </label>
+            <button class="run-button" id="run-button">Run Active Channel</button>
+            <div class="channel-grid" id="channel-grid">
+{_render_channel_controls()}
             </div>
-            <button class="run-button" id="run-button">Run PWG LCR</button>
             <div class="status-grid">
               <div class="metric"><span>Samples</span><strong id="sample-count">{sample_count}</strong></div>
               <div class="metric"><span>Traces</span><strong id="trace-count">{len(status["traces"])}</strong></div>
@@ -493,6 +609,8 @@ def render_app() -> str:
           '/reports/pwg_lcr_comparison.html?ts=' + Date.now();
         logBox.textContent =
           'PWG LCR workflow complete\\n' +
+          'Active channel: CH' + payload.activeChannel + '\\n' +
+          'Waveform: ' + payload.config.waveform + '\\n' +
           'Amplitude Vp: ' + payload.config.amplitudeV + ' V\\n' +
           'Bias: ' + payload.config.biasV + ' V\\n' +
           'Frequency: ' + payload.config.frequencyHz + ' Hz\\n' +
@@ -507,9 +625,13 @@ def render_app() -> str:
 
     function readConfig() {{
       return {{
-        amplitudeV: Number(document.getElementById('amplitude-v').value),
-        biasV: Number(document.getElementById('bias-v').value),
-        frequencyHz: Number(document.getElementById('frequency-hz').value)
+        channels: Array.from(document.querySelectorAll('.channel')).map((channel) => ({{
+          enabled: channel.querySelector('.channel-enabled').checked,
+          waveform: channel.querySelector('.channel-waveform').value,
+          amplitudeV: Number(channel.querySelector('.channel-amplitude').value),
+          biasV: Number(channel.querySelector('.channel-bias').value),
+          frequencyHz: Number(channel.querySelector('.channel-frequency').value)
+        }}))
       }};
     }}
 
@@ -562,16 +684,68 @@ def _render_trace_card(trace: str, values: dict) -> str:
             </div>"""
 
 
+def _render_waveform_options(selected: str) -> str:
+    return "\n".join(
+        f'                  <option value="{waveform}"{" selected" if waveform == selected else ""}>{waveform}</option>'
+        for waveform in SUPPORTED_WAVEFORMS
+    )
+
+
+def _render_channel_controls() -> str:
+    return "\n".join(
+        _render_channel_control(index, channel)
+        for index, channel in enumerate(_default_channels(), start=1)
+    )
+
+
+def _render_channel_control(index: int, channel: dict) -> str:
+    config = channel["config"]
+    checked = " checked" if channel["enabled"] else ""
+    return f"""              <div class="channel" data-channel="{index}">
+                <div class="channel-head">
+                  <span>CH{index}</span>
+                  <label><input class="channel-enabled" type="checkbox"{checked}> Enabled</label>
+                </div>
+                <div class="form-grid">
+                  <label>Waveform
+                    <select class="channel-waveform">
+{_render_waveform_options(config.waveform)}
+                    </select>
+                  </label>
+                  <label>Amplitude Vp
+                    <input class="channel-amplitude" type="number" min="0.1" step="0.1" value="{config.amplitude_v}">
+                  </label>
+                  <label>Bias Voltage
+                    <input class="channel-bias" type="number" step="0.1" value="{config.bias_v}">
+                  </label>
+                  <label>Frequency Hz
+                    <input class="channel-frequency" type="number" min="1" step="100" value="{config.frequency_hz}">
+                  </label>
+                </div>
+              </div>"""
+
+
 def _yes_no(value: bool) -> str:
     return "Yes" if value else "No"
 
 
 def main(argv: list[str]) -> int:
-    port = int(argv[1]) if len(argv) > 1 else 8765
-    server = ThreadingHTTPServer(("127.0.0.1", port), QspiceAppHandler)
-    print(f"QSPICE Engineering Calculator UI: http://127.0.0.1:{port}")
+    host, port = _parse_host_port(argv)
+    server = ThreadingHTTPServer((host, port), QspiceAppHandler)
+    print(f"QSPICE Engineering Calculator UI: http://{host}:{port}")
     server.serve_forever()
     return 0
+
+
+def _parse_host_port(argv: list[str]) -> tuple[str, int]:
+    host = "127.0.0.1"
+    port = 8765
+    if len(argv) == 2:
+        port = int(argv[1])
+    elif len(argv) > 2:
+        host = argv[1]
+        port = int(argv[2])
+    return host, port
 
 
 if __name__ == "__main__":

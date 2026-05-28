@@ -93,6 +93,21 @@ http://127.0.0.1:8765
 The UI has a `Run PWG LCR` button that runs QSPICE, exports CSV through QUX,
 refreshes the reports, and updates the displayed trace statistics.
 
+For trusted LAN access from another computer, run:
+
+```bat
+run-remote-ui.bat
+```
+
+Then browse to this PC's LAN IP address on port `8765`, for example:
+
+```text
+http://192.168.1.50:8765
+```
+
+Remote users can trigger QSPICE runs on this machine, so only expose this on a
+trusted network.
+
 This command regenerates `examples\pwg-lcr\pwg_input.pwl` and, when `examples\pwg-lcr\pwg_lcr.csv` exists, refreshes:
 
 ```text

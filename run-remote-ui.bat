@@ -3,6 +3,10 @@ setlocal
 
 set "PROJECT_ROOT=%~dp0"
 set "PYTHON_CMD=%PYTHON%"
+set "HOST=0.0.0.0"
+set "PORT=8765"
+
+if not "%~1"=="" set "PORT=%~1"
 
 if not defined PYTHON_CMD (
   where python >nul 2>nul
@@ -21,9 +25,9 @@ if not defined PYTHON_CMD (
 )
 
 pushd "%PROJECT_ROOT%"
-echo Opening QSPICE Engineering Calculator UI at http://127.0.0.1:8765
-start "" http://127.0.0.1:8765
-"%PYTHON_CMD%" -m src.qspice_tools.local_app 127.0.0.1 8765
+echo QSPICE Engineering Calculator remote UI is listening on http://%HOST%:%PORT%
+echo Use this only on a trusted network. Remote users can trigger local QSPICE runs.
+"%PYTHON_CMD%" -m src.qspice_tools.local_app "%HOST%" "%PORT%"
 set "RESULT=%ERRORLEVEL%"
 popd
 
