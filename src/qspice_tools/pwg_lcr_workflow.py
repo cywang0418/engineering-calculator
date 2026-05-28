@@ -8,7 +8,13 @@ from pathlib import Path
 
 from src.qspice_tools.csv_reader import read_qspice_csv
 from src.qspice_tools.pwg_comparison_report import generate_pwg_comparison_report
-from src.qspice_tools.pwg_generator import PwgConfig, SUPPORTED_WAVEFORMS, generate_pwl, write_pwl
+from src.qspice_tools.pwg_generator import (
+    PwgConfig,
+    SUPPORTED_WAVEFORMS,
+    generate_pwl,
+    parse_arbitrary_points,
+    write_pwl,
+)
 from src.qspice_tools.waveform_report import generate_waveform_report
 
 
@@ -232,6 +238,16 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--frequency-hz", type=float, default=PwgConfig.default().frequency_hz)
     parser.add_argument("--duty-percent", type=float, default=PwgConfig.default().duty_percent)
     parser.add_argument(
+        "--triangle-symmetry-percent",
+        type=float,
+        default=PwgConfig.default().triangle_symmetry_percent,
+    )
+    parser.add_argument(
+        "--arbitrary-points",
+        default=",".join(str(point) for point in PwgConfig.default().arbitrary_points),
+        help="Comma-separated normalized points for Arbitrary waveform, each from -1 to 1",
+    )
+    parser.add_argument(
         "--run-qspice",
         action="store_true",
         help="Run QSPICE and export fresh CSV results with QUX",
@@ -257,6 +273,8 @@ def main(argv: list[str]) -> int:
             cycles=PwgConfig.default().cycles,
             samples_per_cycle=PwgConfig.default().samples_per_cycle,
             duty_percent=args.duty_percent,
+            triangle_symmetry_percent=args.triangle_symmetry_percent,
+            arbitrary_points=parse_arbitrary_points(args.arbitrary_points),
         ),
         run_qspice=args.run_qspice,
         csv_export_command=args.csv_export_command,

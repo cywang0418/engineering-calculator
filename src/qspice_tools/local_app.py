@@ -12,6 +12,7 @@ from src.qspice_tools.pwg_generator import (
     PwgConfig,
     SUPPORTED_WAVEFORMS,
     generate_pwl,
+    parse_arbitrary_points,
     write_pwl,
 )
 from src.qspice_tools.pwg_lcr_workflow import run_pwg_lcr_workflow
@@ -156,7 +157,7 @@ def build_status() -> dict:
 
 
 def _default_channels() -> list[dict]:
-    waveforms = ("Sinusoidal", "Square", "Triangle", "Sawtooth")
+    waveforms = ("Sinusoidal", "Square", "Triangle", "Arbitrary")
     return [
         {
             "enabled": True,
@@ -168,6 +169,8 @@ def _default_channels() -> list[dict]:
                 cycles=DEFAULT_CONFIG.cycles,
                 samples_per_cycle=DEFAULT_CONFIG.samples_per_cycle,
                 duty_percent=DEFAULT_CONFIG.duty_percent,
+                triangle_symmetry_percent=DEFAULT_CONFIG.triangle_symmetry_percent,
+                arbitrary_points=DEFAULT_CONFIG.arbitrary_points,
             ),
         }
         for index in range(CHANNEL_COUNT)
@@ -183,6 +186,8 @@ def _pwg_config_from_payload(payload: dict) -> PwgConfig:
         cycles=DEFAULT_CONFIG.cycles,
         samples_per_cycle=DEFAULT_CONFIG.samples_per_cycle,
         duty_percent=_duty_percent(payload.get("dutyPercent")),
+        triangle_symmetry_percent=_triangle_symmetry_percent(payload.get("triangleSymmetryPercent")),
+        arbitrary_points=parse_arbitrary_points(payload.get("arbitraryPoints")),
     )
 
 
@@ -199,6 +204,8 @@ def _channels_from_payload(payload: dict) -> list[dict]:
         channel_payload.setdefault("biasV", DEFAULT_CONFIG.bias_v)
         channel_payload.setdefault("frequencyHz", DEFAULT_CONFIG.frequency_hz)
         channel_payload.setdefault("dutyPercent", DEFAULT_CONFIG.duty_percent)
+        channel_payload.setdefault("triangleSymmetryPercent", DEFAULT_CONFIG.triangle_symmetry_percent)
+        channel_payload.setdefault("arbitraryPoints", DEFAULT_CONFIG.arbitrary_points)
         channels.append(
             {
                 "enabled": bool(channel_payload.get("enabled", True)),
@@ -246,12 +253,20 @@ def _duty_percent(value) -> float:
     return number
 
 
+def _triangle_symmetry_percent(value) -> float:
+    number = _float(value, "triangleSymmetryPercent")
+    if not 0.0 < number < 100.0:
+        raise ValueError("triangleSymmetryPercent must be greater than zero and less than 100")
+    return number
+
+
 def _payload_name_to_config_attr(name: str) -> str:
     return {
         "amplitudeV": "amplitude_v",
         "biasV": "bias_v",
         "frequencyHz": "frequency_hz",
         "dutyPercent": "duty_percent",
+        "triangleSymmetryPercent": "triangle_symmetry_percent",
     }[name]
 
 
@@ -272,6 +287,8 @@ def _config_payload(config: PwgConfig) -> dict:
         "cycles": config.cycles,
         "samplesPerCycle": config.samples_per_cycle,
         "dutyPercent": config.duty_percent,
+        "triangleSymmetryPercent": config.triangle_symmetry_percent,
+        "arbitraryPoints": _format_arbitrary_points(config.arbitrary_points),
     }
 
 
@@ -279,6 +296,10 @@ def _channel_payload(channel: dict) -> dict:
     payload = _config_payload(channel["config"])
     payload["enabled"] = channel["enabled"]
     return payload
+
+
+def _format_arbitrary_points(points: tuple[float, ...]) -> str:
+    return ",".join(_format_number(point) for point in points)
 
 
 def render_app() -> str:
@@ -524,6 +545,18 @@ def render_app() -> str:
       font-variant-numeric: tabular-nums;
       background: #f7ffff;
     }}
+    textarea {{
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 7px 8px;
+      color: var(--ink);
+      font-size: 12px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f7ffff;
+      resize: vertical;
+    }}
     select {{
       width: 100%;
       border: 1px solid var(--line);
@@ -532,6 +565,9 @@ def render_app() -> str:
       color: var(--ink);
       font-size: 13px;
       background: #f7ffff;
+    }}
+    .full-row {{
+      grid-column: 1 / -1;
     }}
     .bottom-layout {{
       display: grid;
@@ -734,6 +770,8 @@ def render_app() -> str:
           'Bias: ' + payload.config.biasV + ' V\\n' +
           'Frequency: ' + payload.config.frequencyHz + ' Hz\\n' +
           'Duty: ' + payload.config.dutyPercent + ' %\\n' +
+          'Triangle symmetry: ' + payload.config.triangleSymmetryPercent + ' %\\n' +
+          'AWG points: ' + payload.config.arbitraryPoints + '\\n' +
           'QSPICE exit code: ' + payload.qspiceExitCode + '\\n' +
           'CSV export exit code: ' + payload.csvExportExitCode;
       }} catch (error) {{
@@ -744,7 +782,7 @@ def render_app() -> str:
       }}
     }});
 
-    document.querySelectorAll('.channel input, .channel select').forEach((control) => {{
+    document.querySelectorAll('.channel input, .channel select, .channel textarea').forEach((control) => {{
       control.addEventListener('input', drawPreview);
       control.addEventListener('change', drawPreview);
     }});
@@ -758,7 +796,9 @@ def render_app() -> str:
           amplitudeV: Number(channel.querySelector('.channel-amplitude').value),
           biasV: Number(channel.querySelector('.channel-bias').value),
           frequencyHz: Number(channel.querySelector('.channel-frequency').value),
-          dutyPercent: Number(channel.querySelector('.channel-duty').value)
+          dutyPercent: Number(channel.querySelector('.channel-duty').value),
+          triangleSymmetryPercent: Number(channel.querySelector('.channel-triangle-symmetry').value),
+          arbitraryPoints: channel.querySelector('.channel-awg').value
         }}))
       }};
     }}
@@ -830,7 +870,13 @@ def render_app() -> str:
       context.strokeStyle = traceColors[index % traceColors.length];
       for (let pixel = 0; pixel <= width; pixel += 2) {{
         const phase = (pixel / width * 3) % 1;
-        const unit = waveformUnit(channel.waveform, phase, channel.dutyPercent);
+        const unit = waveformUnit(
+          channel.waveform,
+          phase,
+          channel.dutyPercent,
+          channel.triangleSymmetryPercent,
+          channel.arbitraryPoints
+        );
         const y = yCenter - (channel.biasV + channel.amplitudeV * unit) * yScale;
         if (pixel === 0) context.moveTo(pixel, y);
         else context.lineTo(pixel, y);
@@ -839,18 +885,44 @@ def render_app() -> str:
       context.fillStyle = traceColors[index % traceColors.length];
       context.font = '12px Arial';
       const dutyLabel = channel.waveform === 'Square' ? ' ' + channel.dutyPercent + '%' : '';
-      context.fillText('CH' + (index + 1) + ' ' + channel.waveform + dutyLabel, 10, yCenter - 22);
+      const symmetryLabel = channel.waveform === 'Triangle' ? ' ' + channel.triangleSymmetryPercent + '%' : '';
+      context.fillText('CH' + (index + 1) + ' ' + channel.waveform + dutyLabel + symmetryLabel, 10, yCenter - 22);
     }}
 
-    function waveformUnit(waveform, phase, dutyPercent) {{
+    function waveformUnit(waveform, phase, dutyPercent, triangleSymmetryPercent, arbitraryPoints) {{
       if (waveform === 'Square') return phase < dutyPercent / 100 ? 1 : -1;
       if (waveform === 'Triangle') {{
-        if (phase < 0.25) return 4 * phase;
-        if (phase < 0.75) return 2 - 4 * phase;
-        return -4 + 4 * phase;
+        return triangleUnit(phase, triangleSymmetryPercent);
       }}
-      if (waveform === 'Sawtooth') return 2 * phase - 1;
+      if (waveform === 'Arbitrary') return arbitraryUnit(phase, arbitraryPoints);
       return Math.sin(2 * Math.PI * phase);
+    }}
+
+    function triangleUnit(phase, symmetryPercent) {{
+      const peakPhase = symmetryPercent / 200;
+      const negativePeakPhase = 0.5 + peakPhase;
+      if (phase < peakPhase) return phase / peakPhase;
+      if (phase < 0.5) return 1 - (phase - peakPhase) / (0.5 - peakPhase);
+      if (phase < negativePeakPhase) return -(phase - 0.5) / peakPhase;
+      return -1 + (phase - negativePeakPhase) / (0.5 - peakPhase);
+    }}
+
+    function arbitraryUnit(phase, rawPoints) {{
+      const points = parseArbitraryPoints(rawPoints);
+      if (points.length < 2) return 0;
+      const position = phase * (points.length - 1);
+      const leftIndex = Math.min(Math.floor(position), points.length - 2);
+      const fraction = position - leftIndex;
+      return points[leftIndex] + (points[leftIndex + 1] - points[leftIndex]) * fraction;
+    }}
+
+    function parseArbitraryPoints(rawPoints) {{
+      const parts = String(rawPoints)
+        .replace(/[,;]/g, ' ')
+        .split(/\\s+/)
+        .filter(Boolean)
+        .map((value) => Math.max(-1, Math.min(1, Number(value))));
+      return parts.filter((value) => Number.isFinite(value));
     }}
 
     drawPreview();
@@ -911,6 +983,12 @@ def _render_channel_control(index: int, channel: dict) -> str:
                   </label>
                   <label>Duty % (Square)
                     <input class="channel-duty" type="number" min="1" max="99" step="1" value="{config.duty_percent}">
+                  </label>
+                  <label>Symmetry % (Triangle)
+                    <input class="channel-triangle-symmetry" type="number" min="1" max="99" step="1" value="{config.triangle_symmetry_percent}">
+                  </label>
+                  <label class="full-row">AWG Points (-1..1)
+                    <textarea class="channel-awg" rows="2">{_format_arbitrary_points(config.arbitrary_points)}</textarea>
                   </label>
                 </div>
               </div>"""

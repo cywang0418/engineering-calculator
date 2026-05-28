@@ -22,6 +22,7 @@ class PwgGeneratorTest(unittest.TestCase):
         self.assertEqual(config.cycles, 5)
         self.assertEqual(config.samples_per_cycle, 200)
         self.assertEqual(config.duty_percent, 50.0)
+        self.assertEqual(config.triangle_symmetry_percent, 50.0)
 
     def test_generates_sine_pwl_samples_for_qspice(self):
         config = PwgConfig.default()
@@ -41,7 +42,7 @@ class PwgGeneratorTest(unittest.TestCase):
             "Sinusoidal": [0.0, 1.0, 0.0, -1.0, 0.0],
             "Square": [1.0, 1.0, -1.0, -1.0, 1.0],
             "Triangle": [0.0, 1.0, 0.0, -1.0, 0.0],
-            "Sawtooth": [-1.0, -0.5, 0.0, 0.5, -1.0],
+            "Arbitrary": [0.0, 0.5, -0.5, 1.0, 0.0],
         }
 
         self.assertEqual(SUPPORTED_WAVEFORMS, tuple(expected))
@@ -56,6 +57,7 @@ class PwgGeneratorTest(unittest.TestCase):
                         frequency_hz=1.0,
                         cycles=1,
                         samples_per_cycle=4,
+                        arbitrary_points=(0.0, 0.5, -0.5, 1.0, 0.0),
                     )
                 )
                 self.assertEqual([value for _, value in samples], values)
@@ -74,6 +76,23 @@ class PwgGeneratorTest(unittest.TestCase):
         )
 
         self.assertEqual([value for _, value in samples], [1.0, -1.0, -1.0, -1.0, 1.0])
+
+    def test_generates_triangle_wave_with_adjustable_symmetry(self):
+        samples = generate_pwl(
+            PwgConfig(
+                waveform="Triangle",
+                amplitude_v=1.0,
+                bias_v=0.0,
+                frequency_hz=1.0,
+                cycles=1,
+                samples_per_cycle=8,
+                triangle_symmetry_percent=25.0,
+            )
+        )
+
+        expected = [0.0, 1.0, 2.0 / 3.0, 1.0 / 3.0, 0.0, -1.0, -2.0 / 3.0, -1.0 / 3.0, 0.0]
+        for (_, value), expected_value in zip(samples, expected):
+            self.assertAlmostEqual(value, expected_value)
 
     def test_writes_qspice_pwl_file(self):
         samples = generate_sine_pwl(PwgConfig.default())

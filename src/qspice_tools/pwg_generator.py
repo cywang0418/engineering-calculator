@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-SUPPORTED_WAVEFORMS = ("Sinusoidal", "Square", "Triangle", "Sawtooth")
+SUPPORTED_WAVEFORMS = ("Sinusoidal", "Square", "Triangle", "Arbitrary")
+DEFAULT_ARBITRARY_POINTS = (0.0, 0.65, -0.35, 1.0, -0.9, 0.0)
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,8 @@ class PwgConfig:
     cycles: int
     samples_per_cycle: int
     duty_percent: float = 50.0
+    triangle_symmetry_percent: float = 50.0
+    arbitrary_points: tuple[float, ...] = DEFAULT_ARBITRARY_POINTS
 
     @classmethod
     def default(cls) -> "PwgConfig":
@@ -29,6 +32,8 @@ class PwgConfig:
             cycles=5,
             samples_per_cycle=200,
             duty_percent=50.0,
+            triangle_symmetry_percent=50.0,
+            arbitrary_points=DEFAULT_ARBITRARY_POINTS,
         )
 
     @property
@@ -61,6 +66,9 @@ def generate_pwl(config: PwgConfig) -> list[tuple[float, float]]:
         raise ValueError("samples_per_cycle must be greater than zero")
     if not 0.0 < config.duty_percent < 100.0:
         raise ValueError("duty_percent must be greater than zero and less than 100")
+    if not 0.0 < config.triangle_symmetry_percent < 100.0:
+        raise ValueError("triangle_symmetry_percent must be greater than zero and less than 100")
+    arbitrary_points = parse_arbitrary_points(config.arbitrary_points)
 
     step_s = config.period_s / config.samples_per_cycle
     samples: list[tuple[float, float]] = []
@@ -71,27 +79,75 @@ def generate_pwl(config: PwgConfig) -> list[tuple[float, float]]:
             unit_value = math.sin(2.0 * math.pi * config.frequency_hz * time_s)
         else:
             phase = (time_s * config.frequency_hz) % 1.0
-            unit_value = _unit_waveform_value(config.waveform, phase, config.duty_percent)
+            unit_value = _unit_waveform_value(
+                config.waveform,
+                phase,
+                config.duty_percent,
+                config.triangle_symmetry_percent,
+                arbitrary_points,
+            )
         voltage_v = config.bias_v + config.amplitude_v * unit_value
         samples.append((_clean_number(time_s), _clean_number(voltage_v)))
 
     return samples
 
 
-def _unit_waveform_value(waveform: str, phase: float, duty_percent: float = 50.0) -> float:
+def _unit_waveform_value(
+    waveform: str,
+    phase: float,
+    duty_percent: float = 50.0,
+    triangle_symmetry_percent: float = 50.0,
+    arbitrary_points: tuple[float, ...] = DEFAULT_ARBITRARY_POINTS,
+) -> float:
     if waveform == "Sinusoidal":
         return math.sin(2.0 * math.pi * phase)
     if waveform == "Square":
         return 1.0 if phase < duty_percent / 100.0 else -1.0
     if waveform == "Triangle":
-        if phase < 0.25:
-            return 4.0 * phase
-        if phase < 0.75:
-            return 2.0 - 4.0 * phase
-        return -4.0 + 4.0 * phase
-    if waveform == "Sawtooth":
-        return 2.0 * phase - 1.0
+        return _triangle_wave_value(phase, triangle_symmetry_percent)
+    if waveform == "Arbitrary":
+        return _arbitrary_wave_value(phase, arbitrary_points)
     raise ValueError(f"Unsupported waveform: {waveform}")
+
+
+def _triangle_wave_value(phase: float, symmetry_percent: float) -> float:
+    peak_phase = symmetry_percent / 200.0
+    negative_peak_phase = 0.5 + peak_phase
+    if phase < peak_phase:
+        return phase / peak_phase
+    if phase < 0.5:
+        return 1.0 - (phase - peak_phase) / (0.5 - peak_phase)
+    if phase < negative_peak_phase:
+        return -(phase - 0.5) / peak_phase
+    return -1.0 + (phase - negative_peak_phase) / (0.5 - peak_phase)
+
+
+def _arbitrary_wave_value(phase: float, points: tuple[float, ...]) -> float:
+    if phase <= 0:
+        return points[0]
+    position = phase * (len(points) - 1)
+    left_index = min(int(math.floor(position)), len(points) - 2)
+    fraction = position - left_index
+    left = points[left_index]
+    right = points[left_index + 1]
+    return left + (right - left) * fraction
+
+
+def parse_arbitrary_points(value) -> tuple[float, ...]:
+    if value in (None, ""):
+        points = DEFAULT_ARBITRARY_POINTS
+    elif isinstance(value, str):
+        normalized = value.replace(",", " ").replace(";", " ")
+        points = tuple(float(part) for part in normalized.split())
+    else:
+        points = tuple(float(point) for point in value)
+
+    if len(points) < 2:
+        raise ValueError("arbitrary_points must contain at least two values")
+    for point in points:
+        if not -1.0 <= point <= 1.0:
+            raise ValueError("arbitrary_points values must be between -1 and 1")
+    return points
 
 
 def write_pwl(samples: list[tuple[float, float]], output_path: Path) -> None:
