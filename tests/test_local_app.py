@@ -18,6 +18,8 @@ class LocalAppTest(unittest.TestCase):
         )
         self.assertEqual([channel["config"].duty_percent for channel in channels], [50.0] * 4)
         self.assertEqual([channel["config"].triangle_symmetry_percent for channel in channels], [50.0] * 4)
+        self.assertEqual([channel["config"].phase_deg for channel in channels], [0.0, 90.0, 180.0, 270.0])
+        self.assertEqual([channel["config"].output_load_ohms for channel in channels], [50.0] * 4)
 
     def test_uses_first_enabled_channel_for_qspice_input(self):
         channels = _channels_from_payload(
@@ -39,6 +41,8 @@ class LocalAppTest(unittest.TestCase):
                         "dutyPercent": 35,
                         "triangleSymmetryPercent": 60,
                         "arbitraryPoints": "0,1,0,-1,0",
+                        "phaseDeg": 45,
+                        "outputLoadOhms": 75,
                     },
                 ]
             }
@@ -54,6 +58,36 @@ class LocalAppTest(unittest.TestCase):
         self.assertEqual(config.duty_percent, 35)
         self.assertEqual(config.triangle_symmetry_percent, 60)
         self.assertEqual(config.arbitrary_points, (0.0, 1.0, 0.0, -1.0, 0.0))
+        self.assertEqual(config.phase_deg, 45)
+        self.assertEqual(config.output_load_ohms, 75)
+
+    def test_uses_selected_active_channel_for_qspice_input(self):
+        channels = _channels_from_payload(
+            {
+                "channels": [
+                    {
+                        "enabled": True,
+                        "waveform": "Sinusoidal",
+                        "amplitudeV": 12,
+                        "biasV": 0,
+                        "frequencyHz": 10_000,
+                    },
+                    {
+                        "enabled": True,
+                        "waveform": "Arbitrary",
+                        "amplitudeV": 4,
+                        "biasV": 0,
+                        "frequencyHz": 1_000,
+                        "arbitraryPoints": "0,1,0",
+                    },
+                ]
+            }
+        )
+
+        index, config = _active_channel_config(channels, active_channel=2)
+
+        self.assertEqual(index, 1)
+        self.assertEqual(config.waveform, "Arbitrary")
 
     def test_rejects_all_disabled_channels(self):
         channels = _channels_from_payload(

@@ -50,7 +50,7 @@ class QspiceAppHandler(BaseHTTPRequestHandler):
         try:
             payload = self._read_json()
             channels = _channels_from_payload(payload)
-            active_index, config = _active_channel_config(channels)
+            active_index, config = _active_channel_config(channels, payload.get("activeChannel"))
             _write_channel_pwl_files(channels)
             result = run_pwg_lcr_workflow(
                 case_dir=CASE_DIR,
@@ -158,6 +158,7 @@ def build_status() -> dict:
 
 def _default_channels() -> list[dict]:
     waveforms = ("Sinusoidal", "Square", "Triangle", "Arbitrary")
+    phases = (0.0, 90.0, 180.0, 270.0)
     return [
         {
             "enabled": True,
@@ -171,6 +172,8 @@ def _default_channels() -> list[dict]:
                 duty_percent=DEFAULT_CONFIG.duty_percent,
                 triangle_symmetry_percent=DEFAULT_CONFIG.triangle_symmetry_percent,
                 arbitrary_points=DEFAULT_CONFIG.arbitrary_points,
+                phase_deg=phases[index],
+                output_load_ohms=DEFAULT_CONFIG.output_load_ohms,
             ),
         }
         for index in range(CHANNEL_COUNT)
@@ -188,6 +191,8 @@ def _pwg_config_from_payload(payload: dict) -> PwgConfig:
         duty_percent=_duty_percent(payload.get("dutyPercent")),
         triangle_symmetry_percent=_triangle_symmetry_percent(payload.get("triangleSymmetryPercent")),
         arbitrary_points=parse_arbitrary_points(payload.get("arbitraryPoints")),
+        phase_deg=_float(payload.get("phaseDeg"), "phaseDeg"),
+        output_load_ohms=_positive_float(payload.get("outputLoadOhms"), "outputLoadOhms"),
     )
 
 
@@ -206,6 +211,8 @@ def _channels_from_payload(payload: dict) -> list[dict]:
         channel_payload.setdefault("dutyPercent", DEFAULT_CONFIG.duty_percent)
         channel_payload.setdefault("triangleSymmetryPercent", DEFAULT_CONFIG.triangle_symmetry_percent)
         channel_payload.setdefault("arbitraryPoints", DEFAULT_CONFIG.arbitrary_points)
+        channel_payload.setdefault("phaseDeg", DEFAULT_CONFIG.phase_deg)
+        channel_payload.setdefault("outputLoadOhms", DEFAULT_CONFIG.output_load_ohms)
         channels.append(
             {
                 "enabled": bool(channel_payload.get("enabled", True)),
@@ -215,7 +222,18 @@ def _channels_from_payload(payload: dict) -> list[dict]:
     return channels
 
 
-def _active_channel_config(channels: list[dict]) -> tuple[int, PwgConfig]:
+def _active_channel_config(channels: list[dict], active_channel=None) -> tuple[int, PwgConfig]:
+    if active_channel not in (None, ""):
+        try:
+            index = int(active_channel) - 1
+        except (TypeError, ValueError) as exc:
+            raise ValueError("activeChannel must be a channel number") from exc
+        if index < 0 or index >= len(channels):
+            raise ValueError("activeChannel is out of range")
+        if not channels[index]["enabled"]:
+            raise ValueError("Selected active channel must be enabled")
+        return index, channels[index]["config"]
+
     for index, channel in enumerate(channels):
         if channel["enabled"]:
             return index, channel["config"]
@@ -267,6 +285,8 @@ def _payload_name_to_config_attr(name: str) -> str:
         "frequencyHz": "frequency_hz",
         "dutyPercent": "duty_percent",
         "triangleSymmetryPercent": "triangle_symmetry_percent",
+        "phaseDeg": "phase_deg",
+        "outputLoadOhms": "output_load_ohms",
     }[name]
 
 
@@ -289,6 +309,8 @@ def _config_payload(config: PwgConfig) -> dict:
         "dutyPercent": config.duty_percent,
         "triangleSymmetryPercent": config.triangle_symmetry_percent,
         "arbitraryPoints": _format_arbitrary_points(config.arbitrary_points),
+        "phaseDeg": config.phase_deg,
+        "outputLoadOhms": config.output_load_ohms,
     }
 
 
@@ -404,6 +426,11 @@ def render_app() -> str:
       display: grid;
       gap: 9px;
       align-content: center;
+    }}
+    .run-stack label {{
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
     }}
     .run-button, a.button {{
       border: 1px solid #0f4450;
@@ -525,7 +552,7 @@ def render_app() -> str:
     }}
     .form-grid {{
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
     }}
     label {{
@@ -671,8 +698,13 @@ def render_app() -> str:
         </div>
         <div class="run-stack">
             <button class="run-button" id="run-button">Run Active Channel</button>
+          <label>QSPICE Source CH
+            <select id="active-channel">
+{_render_active_channel_options()}
+            </select>
+          </label>
           <a class="button stop-button" href="/">Reset Panel</a>
-          <div class="status-line">Active input: first enabled channel</div>
+          <div class="status-line">Selected source channel drives the QSPICE PWL input.</div>
         </div>
       </div>
 
@@ -769,6 +801,8 @@ def render_app() -> str:
           'Amplitude Vp: ' + payload.config.amplitudeV + ' V\\n' +
           'Bias: ' + payload.config.biasV + ' V\\n' +
           'Frequency: ' + payload.config.frequencyHz + ' Hz\\n' +
+          'Phase: ' + payload.config.phaseDeg + ' deg\\n' +
+          'Load: ' + payload.config.outputLoadOhms + ' ohm\\n' +
           'Duty: ' + payload.config.dutyPercent + ' %\\n' +
           'Triangle symmetry: ' + payload.config.triangleSymmetryPercent + ' %\\n' +
           'AWG points: ' + payload.config.arbitraryPoints + '\\n' +
@@ -790,12 +824,15 @@ def render_app() -> str:
 
     function readConfig() {{
       return {{
+        activeChannel: Number(document.getElementById('active-channel').value),
         channels: Array.from(document.querySelectorAll('.channel')).map((channel) => ({{
           enabled: channel.querySelector('.channel-enabled').checked,
           waveform: channel.querySelector('.channel-waveform').value,
           amplitudeV: Number(channel.querySelector('.channel-amplitude').value),
           biasV: Number(channel.querySelector('.channel-bias').value),
           frequencyHz: Number(channel.querySelector('.channel-frequency').value),
+          phaseDeg: Number(channel.querySelector('.channel-phase').value),
+          outputLoadOhms: Number(channel.querySelector('.channel-load').value),
           dutyPercent: Number(channel.querySelector('.channel-duty').value),
           triangleSymmetryPercent: Number(channel.querySelector('.channel-triangle-symmetry').value),
           arbitraryPoints: channel.querySelector('.channel-awg').value
@@ -816,6 +853,7 @@ def render_app() -> str:
         document.getElementById('freq-readout').textContent = formatEngineering(firstEnabled.frequencyHz) + 'Hz';
         document.getElementById('vpp-readout').textContent = formatNumber(firstEnabled.amplitudeV * 2) + ' V';
       }}
+      document.getElementById('active-channel').value = String(status.activeChannel || 1);
       const grid = document.getElementById('trace-grid');
       grid.innerHTML = status.traces.map((trace) => renderTrace(trace, status.stats[trace])).join('');
     }}
@@ -869,7 +907,7 @@ def render_app() -> str:
       context.lineWidth = 2;
       context.strokeStyle = traceColors[index % traceColors.length];
       for (let pixel = 0; pixel <= width; pixel += 2) {{
-        const phase = (pixel / width * 3) % 1;
+        const phase = normalizedPhase(pixel / width * 3 + channel.phaseDeg / 360);
         const unit = waveformUnit(
           channel.waveform,
           phase,
@@ -886,7 +924,15 @@ def render_app() -> str:
       context.font = '12px Arial';
       const dutyLabel = channel.waveform === 'Square' ? ' ' + channel.dutyPercent + '%' : '';
       const symmetryLabel = channel.waveform === 'Triangle' ? ' ' + channel.triangleSymmetryPercent + '%' : '';
-      context.fillText('CH' + (index + 1) + ' ' + channel.waveform + dutyLabel + symmetryLabel, 10, yCenter - 22);
+      context.fillText(
+        'CH' + (index + 1) + ' ' + channel.waveform + dutyLabel + symmetryLabel + ' ' + channel.phaseDeg + 'deg',
+        10,
+        yCenter - 22
+      );
+    }}
+
+    function normalizedPhase(value) {{
+      return ((value % 1) + 1) % 1;
     }}
 
     function waveformUnit(waveform, phase, dutyPercent, triangleSymmetryPercent, arbitraryPoints) {{
@@ -958,6 +1004,13 @@ def _render_channel_controls() -> str:
     )
 
 
+def _render_active_channel_options() -> str:
+    return "\n".join(
+        f'              <option value="{index}"{" selected" if index == 1 else ""}>CH{index}</option>'
+        for index in range(1, CHANNEL_COUNT + 1)
+    )
+
+
 def _render_channel_control(index: int, channel: dict) -> str:
     config = channel["config"]
     checked = " checked" if channel["enabled"] else ""
@@ -980,6 +1033,12 @@ def _render_channel_control(index: int, channel: dict) -> str:
                   </label>
                   <label>Frequency Hz
                     <input class="channel-frequency" type="number" min="1" step="100" value="{config.frequency_hz}">
+                  </label>
+                  <label>Phase deg
+                    <input class="channel-phase" type="number" step="1" value="{config.phase_deg}">
+                  </label>
+                  <label>Load Ohm
+                    <input class="channel-load" type="number" min="1" step="1" value="{config.output_load_ohms}">
                   </label>
                   <label>Duty % (Square)
                     <input class="channel-duty" type="number" min="1" max="99" step="1" value="{config.duty_percent}">

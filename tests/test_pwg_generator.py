@@ -23,6 +23,8 @@ class PwgGeneratorTest(unittest.TestCase):
         self.assertEqual(config.samples_per_cycle, 200)
         self.assertEqual(config.duty_percent, 50.0)
         self.assertEqual(config.triangle_symmetry_percent, 50.0)
+        self.assertEqual(config.phase_deg, 0.0)
+        self.assertEqual(config.output_load_ohms, 50.0)
 
     def test_generates_sine_pwl_samples_for_qspice(self):
         config = PwgConfig.default()
@@ -93,6 +95,23 @@ class PwgGeneratorTest(unittest.TestCase):
         expected = [0.0, 1.0, 2.0 / 3.0, 1.0 / 3.0, 0.0, -1.0, -2.0 / 3.0, -1.0 / 3.0, 0.0]
         for (_, value), expected_value in zip(samples, expected):
             self.assertAlmostEqual(value, expected_value)
+
+    def test_applies_phase_to_generated_waveform(self):
+        samples = generate_pwl(
+            PwgConfig(
+                waveform="Sinusoidal",
+                amplitude_v=1.0,
+                bias_v=0.0,
+                frequency_hz=1.0,
+                cycles=1,
+                samples_per_cycle=4,
+                phase_deg=90.0,
+            )
+        )
+
+        expected = [1.0, 0.0, -1.0, 0.0, 1.0]
+        for (_, value), expected_value in zip(samples, expected):
+            self.assertAlmostEqual(value, expected_value, places=9)
 
     def test_writes_qspice_pwl_file(self):
         samples = generate_sine_pwl(PwgConfig.default())

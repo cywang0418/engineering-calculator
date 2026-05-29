@@ -236,6 +236,8 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--amplitude-v", type=float, default=PwgConfig.default().amplitude_v)
     parser.add_argument("--bias-v", type=float, default=PwgConfig.default().bias_v)
     parser.add_argument("--frequency-hz", type=float, default=PwgConfig.default().frequency_hz)
+    parser.add_argument("--phase-deg", type=float, default=PwgConfig.default().phase_deg)
+    parser.add_argument("--output-load-ohms", type=float, default=PwgConfig.default().output_load_ohms)
     parser.add_argument("--duty-percent", type=float, default=PwgConfig.default().duty_percent)
     parser.add_argument(
         "--triangle-symmetry-percent",
@@ -275,6 +277,8 @@ def main(argv: list[str]) -> int:
             duty_percent=args.duty_percent,
             triangle_symmetry_percent=args.triangle_symmetry_percent,
             arbitrary_points=parse_arbitrary_points(args.arbitrary_points),
+            phase_deg=args.phase_deg,
+            output_load_ohms=args.output_load_ohms,
         ),
         run_qspice=args.run_qspice,
         csv_export_command=args.csv_export_command,

@@ -21,6 +21,8 @@ class PwgConfig:
     duty_percent: float = 50.0
     triangle_symmetry_percent: float = 50.0
     arbitrary_points: tuple[float, ...] = DEFAULT_ARBITRARY_POINTS
+    phase_deg: float = 0.0
+    output_load_ohms: float = 50.0
 
     @classmethod
     def default(cls) -> "PwgConfig":
@@ -34,6 +36,8 @@ class PwgConfig:
             duty_percent=50.0,
             triangle_symmetry_percent=50.0,
             arbitrary_points=DEFAULT_ARBITRARY_POINTS,
+            phase_deg=0.0,
+            output_load_ohms=50.0,
         )
 
     @property
@@ -68,17 +72,20 @@ def generate_pwl(config: PwgConfig) -> list[tuple[float, float]]:
         raise ValueError("duty_percent must be greater than zero and less than 100")
     if not 0.0 < config.triangle_symmetry_percent < 100.0:
         raise ValueError("triangle_symmetry_percent must be greater than zero and less than 100")
+    if config.output_load_ohms <= 0:
+        raise ValueError("output_load_ohms must be greater than zero")
     arbitrary_points = parse_arbitrary_points(config.arbitrary_points)
+    phase_offset = (config.phase_deg / 360.0) % 1.0
 
     step_s = config.period_s / config.samples_per_cycle
     samples: list[tuple[float, float]] = []
 
     for index in range(config.sample_count):
         time_s = index * step_s
+        phase = (time_s * config.frequency_hz + phase_offset) % 1.0
         if config.waveform == "Sinusoidal":
-            unit_value = math.sin(2.0 * math.pi * config.frequency_hz * time_s)
+            unit_value = math.sin(2.0 * math.pi * phase)
         else:
-            phase = (time_s * config.frequency_hz) % 1.0
             unit_value = _unit_waveform_value(
                 config.waveform,
                 phase,
