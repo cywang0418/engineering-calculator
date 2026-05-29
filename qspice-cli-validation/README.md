@@ -108,6 +108,23 @@ http://192.168.1.50:8765
 Remote users can trigger QSPICE runs on this machine, so only expose this on a
 trusted network.
 
+For a temporary public HTTPS test URL, use Cloudflare Tunnel from the project root.
+Install the bundled tunnel helper once:
+
+```bat
+powershell -ExecutionPolicy Bypass -File scripts\install-cloudflared.ps1
+```
+
+Then start the password-protected local UI plus public tunnel:
+
+```bat
+run-public-tunnel.bat
+```
+
+The script prints a `https://*.trycloudflare.com` URL. Share that URL plus the
+displayed username and the password you entered. Public tunnel mode binds the UI
+to `127.0.0.1` and requires HTTP Basic Auth through `QSPICE_UI_PASSWORD`.
+
 This command regenerates `examples\pwg-lcr\pwg_input.pwl` and, when `examples\pwg-lcr\pwg_lcr.csv` exists, refreshes:
 
 ```text

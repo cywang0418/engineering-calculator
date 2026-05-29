@@ -5,6 +5,8 @@ dist/
 build/
 *.log
 *.qraw
+logs/
+tools/
 qspice-cli-validation/examples/pwg-lcr/pwg_ch*.pwl
 __pycache__/
 *.pyc

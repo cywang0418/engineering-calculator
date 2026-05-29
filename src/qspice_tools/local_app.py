@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import base64
 import json
+import os
+import secrets
 import sys
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -29,6 +32,8 @@ CHANNEL_COUNT = 4
 
 class QspiceAppHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
+        if not self._authorized():
+            return
         parsed = urlparse(self.path)
         if parsed.path in ("/", "/index.html"):
             self._send_html(render_app())
@@ -42,6 +47,8 @@ class QspiceAppHandler(BaseHTTPRequestHandler):
         self.send_error(404)
 
     def do_POST(self) -> None:
+        if not self._authorized():
+            return
         parsed = urlparse(self.path)
         if parsed.path != "/api/run-pwg-lcr":
             self.send_error(404)
@@ -102,6 +109,25 @@ class QspiceAppHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _authorized(self) -> bool:
+        credentials = _auth_credentials()
+        if credentials is None:
+            return True
+        user, password = credentials
+        if _basic_auth_header_matches(self.headers.get("Authorization", ""), user, password):
+            return True
+        self._send_auth_required()
+        return False
+
+    def _send_auth_required(self) -> None:
+        body = b"Authentication required"
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="QSPICE Function Generator"')
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def _send_report_file(self, name: str) -> None:
         path = (REPORTS_DIR / name).resolve()
         if REPORTS_DIR.resolve() not in path.parents or not path.exists():
@@ -120,6 +146,26 @@ class QspiceAppHandler(BaseHTTPRequestHandler):
             return {}
         raw = self.rfile.read(length).decode("utf-8")
         return json.loads(raw)
+
+
+def _auth_credentials() -> tuple[str, str] | None:
+    password = os.environ.get("QSPICE_UI_PASSWORD")
+    if not password:
+        return None
+    return os.environ.get("QSPICE_UI_USER", "qgen"), password
+
+
+def _basic_auth_header_matches(header: str, expected_user: str, expected_password: str) -> bool:
+    if not header.startswith("Basic "):
+        return False
+    try:
+        decoded = base64.b64decode(header.removeprefix("Basic ").strip(), validate=True).decode("utf-8")
+    except (ValueError, UnicodeDecodeError):
+        return False
+    user, separator, password = decoded.partition(":")
+    if not separator:
+        return False
+    return secrets.compare_digest(user, expected_user) and secrets.compare_digest(password, expected_password)
 
 
 def build_status() -> dict:
@@ -1061,6 +1107,11 @@ def main(argv: list[str]) -> int:
     host, port = _parse_host_port(argv)
     server = ThreadingHTTPServer((host, port), QspiceAppHandler)
     print(f"QSPICE Engineering Calculator UI: http://{host}:{port}")
+    credentials = _auth_credentials()
+    if credentials is None:
+        print("Authentication: disabled. Set QSPICE_UI_PASSWORD to protect remote access.")
+    else:
+        print(f"Authentication: enabled for user '{credentials[0]}'")
     server.serve_forever()
     return 0
 

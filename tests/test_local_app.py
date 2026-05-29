@@ -1,13 +1,22 @@
 import unittest
+from base64 import b64encode
 
 from src.qspice_tools.local_app import (
     _active_channel_config,
+    _basic_auth_header_matches,
     _channels_from_payload,
     _default_channels,
 )
 
 
 class LocalAppTest(unittest.TestCase):
+    def test_matches_basic_auth_header(self):
+        header = "Basic " + b64encode(b"qgen:secret").decode("ascii")
+
+        self.assertTrue(_basic_auth_header_matches(header, "qgen", "secret"))
+        self.assertFalse(_basic_auth_header_matches(header, "qgen", "wrong"))
+        self.assertFalse(_basic_auth_header_matches("Bearer token", "qgen", "secret"))
+
     def test_builds_default_four_channel_generator(self):
         channels = _default_channels()
 
