@@ -125,6 +125,12 @@ The script prints a `https://*.trycloudflare.com` URL. Share that URL plus the
 displayed username and the password you entered. Public tunnel mode binds the UI
 to `127.0.0.1` and requires HTTP Basic Auth through `QSPICE_UI_PASSWORD`.
 
+To stop public access and the local UI listener:
+
+```bat
+stop-public-tunnel.bat
+```
+
 This command regenerates `examples\pwg-lcr\pwg_input.pwl` and, when `examples\pwg-lcr\pwg_lcr.csv` exists, refreshes:
 
 ```text
